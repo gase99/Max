@@ -1,0 +1,56 @@
+{
+  "name": "@cabinet/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cabinet Analysis Pro \u2014 Windows desktop shell (Electron)",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "npm run build:web && electron .",
+    "build:web": "npm run build -w @cabinet/web && node copy-app.cjs",
+    "dist:win": "npm run build:web && electron-builder --win nsis portable",
+    "dist:dir": "npm run build:web && electron-builder --dir"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "ir.cabinetanalysis.pro",
+    "productName": "Cabinet Analysis Pro",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "app/**/*"
+    ],
+    "extraMetadata": {
+      "main": "main.cjs"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Cabinet Analysis Pro"
+    }
+  }
+}

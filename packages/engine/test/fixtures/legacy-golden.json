@@ -1,0 +1,1597 @@
+{
+ "_meta": {
+  "source": "reference/analiz pro.2.xlsx",
+  "sheet_sha_md5": "see docs/audit; cached values produced by Excel (Excel Android 16.0300)",
+  "unit": "centimetre (workbook-native)",
+  "note": "expected values are Excel's own cached results, not hand-computed"
+ },
+ "ground": [
+  {
+   "slot": 1,
+   "input": {
+    "width": 80,
+    "baseWidth": 58,
+    "bodyWidth": 58,
+    "bodyLength": 73.4,
+    "shelfWidth": 55,
+    "railWidth": 7,
+    "doorHeight": 73.4,
+    "counts": {
+     "base": 1,
+     "body": 2,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "base": [
+      0,
+      1
+     ],
+     "body": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 80,
+    "shelfLength": 76.8,
+    "railLength": 76.8,
+    "backWidth": 78.4,
+    "backLength": 74.2,
+    "doorWidth": 39.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 2,
+   "input": {
+    "width": 100,
+    "baseWidth": 58,
+    "bodyWidth": 58,
+    "bodyLength": 73.4,
+    "shelfWidth": 55,
+    "railWidth": 7,
+    "doorHeight": 73.4,
+    "counts": {
+     "base": 1,
+     "body": 2,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "base": [
+      0,
+      1
+     ],
+     "body": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 100,
+    "shelfLength": 96.8,
+    "railLength": 96.8,
+    "backWidth": 98.4,
+    "backLength": 74.2,
+    "doorWidth": 49.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 3,
+   "input": {
+    "width": 98,
+    "baseWidth": 58,
+    "bodyWidth": 58,
+    "bodyLength": 73.4,
+    "shelfWidth": 55,
+    "railWidth": 7,
+    "doorHeight": 73.4,
+    "counts": {
+     "base": 1,
+     "body": 2,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "base": [
+      0,
+      1
+     ],
+     "body": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 98,
+    "shelfLength": 94.8,
+    "railLength": 94.8,
+    "backWidth": 96.4,
+    "backLength": 74.2,
+    "doorWidth": 48.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 4,
+   "input": {
+    "width": 100,
+    "baseWidth": 58,
+    "bodyWidth": 58,
+    "bodyLength": 73.4,
+    "shelfWidth": 55,
+    "railWidth": 7,
+    "doorHeight": 73.4,
+    "counts": {
+     "base": 1,
+     "body": 2,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "base": [
+      0,
+      1
+     ],
+     "body": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 100,
+    "shelfLength": 96.8,
+    "railLength": 96.8,
+    "backWidth": 98.4,
+    "backLength": 74.2,
+    "doorWidth": 49.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 5,
+   "input": {
+    "width": 98,
+    "baseWidth": 58,
+    "bodyWidth": 58,
+    "bodyLength": 73.4,
+    "shelfWidth": 55,
+    "railWidth": 7,
+    "doorHeight": 73.4,
+    "counts": {
+     "base": 1,
+     "body": 2,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "base": [
+      0,
+      1
+     ],
+     "body": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 98,
+    "shelfLength": 94.8,
+    "railLength": 94.8,
+    "backWidth": 96.4,
+    "backLength": 74.2,
+    "doorWidth": 48.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 6,
+   "input": {
+    "width": 98,
+    "baseWidth": 58,
+    "bodyWidth": 58,
+    "bodyLength": 73.4,
+    "shelfWidth": 55,
+    "railWidth": 7,
+    "doorHeight": 73.4,
+    "counts": {
+     "base": 1,
+     "body": 2,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "base": [
+      0,
+      1
+     ],
+     "body": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 98,
+    "shelfLength": 94.8,
+    "railLength": 94.8,
+    "backWidth": 96.4,
+    "backLength": 74.2,
+    "doorWidth": 48.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 7,
+   "input": {
+    "width": 30,
+    "baseWidth": 58,
+    "bodyWidth": 58,
+    "bodyLength": 73.4,
+    "shelfWidth": 55,
+    "railWidth": 7,
+    "doorHeight": 73.4,
+    "counts": {
+     "base": 1,
+     "body": 2,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "base": [
+      0,
+      1
+     ],
+     "body": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 30,
+    "shelfLength": 26.8,
+    "railLength": 26.8,
+    "backWidth": 28.4,
+    "backLength": 74.2,
+    "doorWidth": 29.8,
+    "doorCount": 1
+   }
+  },
+  {
+   "slot": 8,
+   "input": {
+    "width": 98,
+    "baseWidth": 58,
+    "bodyWidth": 58,
+    "bodyLength": 73.4,
+    "shelfWidth": 55,
+    "railWidth": 7,
+    "doorHeight": 73.4,
+    "counts": {
+     "base": 1,
+     "body": 2,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "base": [
+      0,
+      1
+     ],
+     "body": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 98,
+    "shelfLength": 94.8,
+    "railLength": 94.8,
+    "backWidth": 96.4,
+    "backLength": 74.2,
+    "doorWidth": 48.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 9,
+   "input": {
+    "width": 98,
+    "baseWidth": 58,
+    "bodyWidth": 58,
+    "bodyLength": 73.4,
+    "shelfWidth": 55,
+    "railWidth": 7,
+    "doorHeight": 73.4,
+    "counts": {
+     "base": 1,
+     "body": 2,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "base": [
+      0,
+      1
+     ],
+     "body": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 98,
+    "shelfLength": 94.8,
+    "railLength": 94.8,
+    "backWidth": 96.4,
+    "backLength": 74.2,
+    "doorWidth": 48.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 10,
+   "input": {
+    "width": 100,
+    "baseWidth": 58,
+    "bodyWidth": 58,
+    "bodyLength": 73.4,
+    "shelfWidth": 55,
+    "railWidth": 7,
+    "doorHeight": 73.4,
+    "counts": {
+     "base": 0,
+     "body": 2,
+     "shelf": 0,
+     "rail": 0
+    },
+    "bandFlags": {
+     "base": [
+      0,
+      1
+     ],
+     "body": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 0
+   },
+   "expected": {
+    "baseLength": 100,
+    "shelfLength": 96.8,
+    "railLength": 96.8,
+    "backWidth": 98.4,
+    "backLength": 74.2,
+    "doorWidth": 49.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 11,
+   "input": {
+    "width": 98,
+    "baseWidth": 58,
+    "bodyWidth": 58,
+    "bodyLength": 73.4,
+    "shelfWidth": 55,
+    "railWidth": 7,
+    "doorHeight": 73.4,
+    "counts": {
+     "base": 0,
+     "body": 2,
+     "shelf": 0,
+     "rail": 0
+    },
+    "bandFlags": {
+     "base": [
+      0,
+      1
+     ],
+     "body": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 0
+   },
+   "expected": {
+    "baseLength": 98,
+    "shelfLength": 94.8,
+    "railLength": 94.8,
+    "backWidth": 96.4,
+    "backLength": 74.2,
+    "doorWidth": 48.8,
+    "doorCount": 2
+   }
+  }
+ ],
+ "wall": [
+  {
+   "slot": 1,
+   "input": {
+    "width": 60,
+    "bodyWidth": 35,
+    "bodyLength": 90,
+    "baseWidth": 35,
+    "railWidth": 7,
+    "doorHeight": 92,
+    "counts": {
+     "body": 2,
+     "base": 1,
+     "top": 1,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "body": [
+      1,
+      1
+     ],
+     "base": [
+      0,
+      1
+     ],
+     "top": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 56.8,
+    "topWidth": 33,
+    "topLength": 56.8,
+    "shelfWidth": 32,
+    "shelfLength": 56.8,
+    "railLength": 56.8,
+    "backWidth": 58.4,
+    "backLength": 89.2,
+    "doorWidth": 29.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 2,
+   "input": {
+    "width": 84,
+    "bodyWidth": 35,
+    "bodyLength": 100,
+    "baseWidth": 35,
+    "railWidth": 7,
+    "doorHeight": 92,
+    "counts": {
+     "body": 2,
+     "base": 1,
+     "top": 1,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "body": [
+      1,
+      1
+     ],
+     "base": [
+      0,
+      1
+     ],
+     "top": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 80.8,
+    "topWidth": 33,
+    "topLength": 80.8,
+    "shelfWidth": 32,
+    "shelfLength": 80.8,
+    "railLength": 80.8,
+    "backWidth": 82.39999999999999,
+    "backLength": 99.2,
+    "doorWidth": 41.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 3,
+   "input": {
+    "width": 80,
+    "bodyWidth": 35,
+    "bodyLength": 90,
+    "baseWidth": 35,
+    "railWidth": 7,
+    "doorHeight": 92,
+    "counts": {
+     "body": 2,
+     "base": 1,
+     "top": 1,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "body": [
+      1,
+      1
+     ],
+     "base": [
+      0,
+      1
+     ],
+     "top": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 76.8,
+    "topWidth": 33,
+    "topLength": 76.8,
+    "shelfWidth": 32,
+    "shelfLength": 76.8,
+    "railLength": 76.8,
+    "backWidth": 78.39999999999999,
+    "backLength": 89.2,
+    "doorWidth": 39.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 4,
+   "input": {
+    "width": 84,
+    "bodyWidth": 35,
+    "bodyLength": 90,
+    "baseWidth": 35,
+    "railWidth": 7,
+    "doorHeight": 92,
+    "counts": {
+     "body": 2,
+     "base": 1,
+     "top": 1,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "body": [
+      1,
+      1
+     ],
+     "base": [
+      0,
+      1
+     ],
+     "top": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 80.8,
+    "topWidth": 33,
+    "topLength": 80.8,
+    "shelfWidth": 32,
+    "shelfLength": 80.8,
+    "railLength": 80.8,
+    "backWidth": 82.39999999999999,
+    "backLength": 89.2,
+    "doorWidth": 41.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 5,
+   "input": {
+    "width": 84,
+    "bodyWidth": 35,
+    "bodyLength": 90,
+    "baseWidth": 35,
+    "railWidth": 7,
+    "doorHeight": 92,
+    "counts": {
+     "body": 2,
+     "base": 1,
+     "top": 1,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "body": [
+      1,
+      1
+     ],
+     "base": [
+      0,
+      1
+     ],
+     "top": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 80.8,
+    "topWidth": 33,
+    "topLength": 80.8,
+    "shelfWidth": 32,
+    "shelfLength": 80.8,
+    "railLength": 80.8,
+    "backWidth": 82.39999999999999,
+    "backLength": 89.2,
+    "doorWidth": 41.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 6,
+   "input": {
+    "width": 84,
+    "bodyWidth": 35,
+    "bodyLength": 90,
+    "baseWidth": 35,
+    "railWidth": 7,
+    "doorHeight": 92,
+    "counts": {
+     "body": 2,
+     "base": 1,
+     "top": 1,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "body": [
+      1,
+      1
+     ],
+     "base": [
+      0,
+      1
+     ],
+     "top": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 80.8,
+    "topWidth": 33,
+    "topLength": 80.8,
+    "shelfWidth": 32,
+    "shelfLength": 80.8,
+    "railLength": 80.8,
+    "backWidth": 82.39999999999999,
+    "backLength": 89.2,
+    "doorWidth": 41.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 7,
+   "input": {
+    "width": 84,
+    "bodyWidth": 35,
+    "bodyLength": 90,
+    "baseWidth": 35,
+    "railWidth": 7,
+    "doorHeight": 92,
+    "counts": {
+     "body": 2,
+     "base": 1,
+     "top": 1,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "body": [
+      1,
+      1
+     ],
+     "base": [
+      0,
+      1
+     ],
+     "top": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 80.8,
+    "topWidth": 33,
+    "topLength": 80.8,
+    "shelfWidth": 32,
+    "shelfLength": 80.8,
+    "railLength": 80.8,
+    "backWidth": 82.39999999999999,
+    "backLength": 89.2,
+    "doorWidth": 41.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 8,
+   "input": {
+    "width": 84,
+    "bodyWidth": 35,
+    "bodyLength": 90,
+    "baseWidth": 35,
+    "railWidth": 7,
+    "doorHeight": 92,
+    "counts": {
+     "body": 2,
+     "base": 1,
+     "top": 1,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "body": [
+      1,
+      1
+     ],
+     "base": [
+      0,
+      1
+     ],
+     "top": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 80.8,
+    "topWidth": 33,
+    "topLength": 80.8,
+    "shelfWidth": 32,
+    "shelfLength": 80.8,
+    "railLength": 80.8,
+    "backWidth": 82.39999999999999,
+    "backLength": 89.2,
+    "doorWidth": 41.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 9,
+   "input": {
+    "width": 84,
+    "bodyWidth": 35,
+    "bodyLength": 90,
+    "baseWidth": 35,
+    "railWidth": 7,
+    "doorHeight": 92,
+    "counts": {
+     "body": 2,
+     "base": 1,
+     "top": 1,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "body": [
+      1,
+      1
+     ],
+     "base": [
+      0,
+      1
+     ],
+     "top": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 80.8,
+    "topWidth": 33,
+    "topLength": 80.8,
+    "shelfWidth": 32,
+    "shelfLength": 80.8,
+    "railLength": 80.8,
+    "backWidth": 82.39999999999999,
+    "backLength": 89.2,
+    "doorWidth": 41.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 10,
+   "input": {
+    "width": 84,
+    "bodyWidth": 35,
+    "bodyLength": 90,
+    "baseWidth": 35,
+    "railWidth": 7,
+    "doorHeight": 92,
+    "counts": {
+     "body": 2,
+     "base": 1,
+     "top": 1,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "body": [
+      1,
+      1
+     ],
+     "base": [
+      0,
+      1
+     ],
+     "top": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 80.8,
+    "topWidth": 33,
+    "topLength": 80.8,
+    "shelfWidth": 32,
+    "shelfLength": 80.8,
+    "railLength": 80.8,
+    "backWidth": 82.39999999999999,
+    "backLength": 89.2,
+    "doorWidth": 41.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 11,
+   "input": {
+    "width": 84,
+    "bodyWidth": 35,
+    "bodyLength": 90,
+    "baseWidth": 35,
+    "railWidth": 7,
+    "doorHeight": 92,
+    "counts": {
+     "body": 2,
+     "base": 1,
+     "top": 1,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "body": [
+      1,
+      1
+     ],
+     "base": [
+      0,
+      1
+     ],
+     "top": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 80.8,
+    "topWidth": 33,
+    "topLength": 80.8,
+    "shelfWidth": 32,
+    "shelfLength": 80.8,
+    "railLength": 80.8,
+    "backWidth": 82.39999999999999,
+    "backLength": 89.2,
+    "doorWidth": 41.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 12,
+   "input": {
+    "width": 84,
+    "bodyWidth": 35,
+    "bodyLength": 50,
+    "baseWidth": 35,
+    "railWidth": 7,
+    "doorHeight": 92,
+    "counts": {
+     "body": 2,
+     "base": 1,
+     "top": 1,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "body": [
+      1,
+      1
+     ],
+     "base": [
+      0,
+      1
+     ],
+     "top": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 80.8,
+    "topWidth": 33,
+    "topLength": 80.8,
+    "shelfWidth": 32,
+    "shelfLength": 80.8,
+    "railLength": 80.8,
+    "backWidth": 82.39999999999999,
+    "backLength": 49.2,
+    "doorWidth": 41.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 13,
+   "input": {
+    "width": 84,
+    "bodyWidth": 35,
+    "bodyLength": 90,
+    "baseWidth": 35,
+    "railWidth": 7,
+    "doorHeight": 92,
+    "counts": {
+     "body": 2,
+     "base": 1,
+     "top": 1,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "body": [
+      1,
+      1
+     ],
+     "base": [
+      0,
+      1
+     ],
+     "top": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 80.8,
+    "topWidth": 33,
+    "topLength": 80.8,
+    "shelfWidth": 32,
+    "shelfLength": 80.8,
+    "railLength": 80.8,
+    "backWidth": 82.39999999999999,
+    "backLength": 89.2,
+    "doorWidth": 41.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 14,
+   "input": {
+    "width": 84,
+    "bodyWidth": 35,
+    "bodyLength": 90,
+    "baseWidth": 35,
+    "railWidth": 7,
+    "doorHeight": 92,
+    "counts": {
+     "body": 2,
+     "base": 1,
+     "top": 1,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "body": [
+      1,
+      1
+     ],
+     "base": [
+      0,
+      1
+     ],
+     "top": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 80.8,
+    "topWidth": 33,
+    "topLength": 80.8,
+    "shelfWidth": 32,
+    "shelfLength": 80.8,
+    "railLength": 80.8,
+    "backWidth": 82.39999999999999,
+    "backLength": 89.2,
+    "doorWidth": 41.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 15,
+   "input": {
+    "width": 84,
+    "bodyWidth": 35,
+    "bodyLength": 90,
+    "baseWidth": 35,
+    "railWidth": 7,
+    "doorHeight": 92,
+    "counts": {
+     "body": 2,
+     "base": 1,
+     "top": 1,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "body": [
+      1,
+      1
+     ],
+     "base": [
+      0,
+      1
+     ],
+     "top": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 80.8,
+    "topWidth": 33,
+    "topLength": 80.8,
+    "shelfWidth": 32,
+    "shelfLength": 80.8,
+    "railLength": 80.8,
+    "backWidth": 82.39999999999999,
+    "backLength": 89.2,
+    "doorWidth": 41.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 16,
+   "input": {
+    "width": 84,
+    "bodyWidth": 35,
+    "bodyLength": 90,
+    "baseWidth": 35,
+    "railWidth": 7,
+    "doorHeight": 92,
+    "counts": {
+     "body": 2,
+     "base": 1,
+     "top": 1,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "body": [
+      1,
+      1
+     ],
+     "base": [
+      0,
+      1
+     ],
+     "top": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 80.8,
+    "topWidth": 33,
+    "topLength": 80.8,
+    "shelfWidth": 32,
+    "shelfLength": 80.8,
+    "railLength": 80.8,
+    "backWidth": 82.39999999999999,
+    "backLength": 89.2,
+    "doorWidth": 41.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 17,
+   "input": {
+    "width": 84,
+    "bodyWidth": 35,
+    "bodyLength": 90,
+    "baseWidth": 35,
+    "railWidth": 7,
+    "doorHeight": 92,
+    "counts": {
+     "body": 2,
+     "base": 1,
+     "top": 1,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "body": [
+      1,
+      1
+     ],
+     "base": [
+      0,
+      1
+     ],
+     "top": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 80.8,
+    "topWidth": 33,
+    "topLength": 80.8,
+    "shelfWidth": 32,
+    "shelfLength": 80.8,
+    "railLength": 80.8,
+    "backWidth": 82.39999999999999,
+    "backLength": 89.2,
+    "doorWidth": 41.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 18,
+   "input": {
+    "width": 84,
+    "bodyWidth": 35,
+    "bodyLength": 90,
+    "baseWidth": 35,
+    "railWidth": 7,
+    "doorHeight": 92,
+    "counts": {
+     "body": 2,
+     "base": 1,
+     "top": 1,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "body": [
+      1,
+      1
+     ],
+     "base": [
+      0,
+      1
+     ],
+     "top": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 80.8,
+    "topWidth": 33,
+    "topLength": 80.8,
+    "shelfWidth": 32,
+    "shelfLength": 80.8,
+    "railLength": 80.8,
+    "backWidth": 82.39999999999999,
+    "backLength": 89.2,
+    "doorWidth": 41.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 19,
+   "input": {
+    "width": 84,
+    "bodyWidth": 35,
+    "bodyLength": 90,
+    "baseWidth": 35,
+    "railWidth": 7,
+    "doorHeight": 92,
+    "counts": {
+     "body": 2,
+     "base": 1,
+     "top": 1,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "body": [
+      1,
+      1
+     ],
+     "base": [
+      0,
+      1
+     ],
+     "top": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 80.8,
+    "topWidth": 33,
+    "topLength": 80.8,
+    "shelfWidth": 32,
+    "shelfLength": 80.8,
+    "railLength": 80.8,
+    "backWidth": 82.39999999999999,
+    "backLength": 89.2,
+    "doorWidth": 41.8,
+    "doorCount": 2
+   }
+  },
+  {
+   "slot": 20,
+   "input": {
+    "width": 35,
+    "bodyWidth": 35,
+    "bodyLength": 90,
+    "baseWidth": 35,
+    "railWidth": 7,
+    "doorHeight": 92,
+    "counts": {
+     "body": 2,
+     "base": 1,
+     "top": 1,
+     "shelf": 1,
+     "rail": 1
+    },
+    "bandFlags": {
+     "body": [
+      1,
+      1
+     ],
+     "base": [
+      0,
+      1
+     ],
+     "top": [
+      0,
+      1
+     ],
+     "shelf": [
+      0,
+      1
+     ],
+     "rail": [
+      0,
+      0
+     ]
+    },
+    "backCount": 1
+   },
+   "expected": {
+    "baseLength": 31.8,
+    "topWidth": 33,
+    "topLength": 31.8,
+    "shelfWidth": 32,
+    "shelfLength": 31.8,
+    "railLength": 31.8,
+    "backWidth": 33.4,
+    "backLength": 89.2,
+    "doorWidth": 34.8,
+    "doorCount": 1
+   }
+  }
+ ],
+ "drawer": {
+  "input": {
+   "count": 1,
+   "depth": 50,
+   "width": 90,
+   "height": 50
+  },
+  "expected": {
+   "bodyL": 45,
+   "bodyW": 12.666666666666668,
+   "bodyCount": 2,
+   "frontL": 80.9,
+   "frontW": 12.666666666666668,
+   "frontCount": 1,
+   "backL": 80.9,
+   "backW": 10.666666666666668,
+   "backCount": 1
+  }
+ }
+}

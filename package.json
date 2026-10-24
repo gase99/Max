@@ -1,0 +1,27 @@
+{
+  "name": "cabinet-analysis-pro",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Cabinet Analysis Pro \u2014 industrial cabinet & MDF analysis, cutting list and sheet optimisation",
+  "workspaces": [
+    "packages/*",
+    "apps/web"
+  ],
+  "scripts": {
+    "test": "npm run test -w @cabinet/engine",
+    "build:engine": "npm run build -w @cabinet/engine",
+    "dev": "npm run dev -w @cabinet/web",
+    "build": "npm run build -w @cabinet/engine && npm run build -w @cabinet/web",
+    "preview": "npm run preview -w @cabinet/web",
+    "desktop": "cd apps/desktop && npm start",
+    "dist:win": "cd apps/desktop && npm run dist:win",
+    "test:web": "vitest run --root apps/web",
+    "test:all": "npm run test -w @cabinet/engine && npm run test:web"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.0"
+  }
+}
