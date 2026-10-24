@@ -121,13 +121,15 @@ describe('electron smoke scripts (executed against the real app)', () => {
     Object.defineProperty(URL, 'createObjectURL', { value: vi.fn(() => 'blob:mock'), configurable: true });
     Object.defineProperty(URL, 'revokeObjectURL', { value: vi.fn(), configurable: true });
     render(<App />);
-    const checks = await runScripts(['SCRIPT_CREATE', 'SCRIPT_DRAWINGS']);
+    // Two units: a ground cabinet (11 parts) and a wall cabinet (20 parts, so
+    // its parts table has to continue on a second A4 page).
+    const checks = await runScripts(['SCRIPT_CREATE', 'SCRIPT_ADD_WALL', 'SCRIPT_DRAWINGS']);
     const failed = checks.filter((c) => !c.ok).map((c) => `${c.name} (got: ${c.detail})`);
     expect(failed).toEqual([]);
   }, 40000);
 
   it('every script is wired to the real UI text, not to placeholders', () => {
-    const names = ['SCRIPT_BASICS', 'SCRIPT_CREATE', 'SCRIPT_CLICK_CSV', 'SCRIPT_DRAWINGS', 'SCRIPT_CLICK_DXF', 'SCRIPT_CLICK_PDF', 'SCRIPT_CLICK_BACKUP', 'SCRIPT_RESTORE', 'SCRIPT_ROBUSTNESS', 'SCRIPT_REOPEN'];
+    const names = ['SCRIPT_BASICS', 'SCRIPT_CREATE', 'SCRIPT_ADD_WALL', 'SCRIPT_CLICK_CSV', 'SCRIPT_DRAWINGS', 'SCRIPT_CLICK_DXF', 'SCRIPT_CLICK_PDF', 'SCRIPT_CLICK_BACKUP', 'SCRIPT_RESTORE', 'SCRIPT_ROBUSTNESS', 'SCRIPT_REOPEN'];
     const all = names.map((n) => wrapScript(materialise(n, '').trim())).join('\n');
     for (const literal of ['بارگذاری نمونهٔ پروژه', 'لیست برش', 'نقشهٔ انفجاری', 'پشتیبان‌گیری', 'DXF', '768', 'پروژهٔ آزمایشی']) {
       expect(all, `the smoke scripts must reference «${literal}»`).toContain(literal);

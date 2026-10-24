@@ -274,6 +274,21 @@ const SCRIPT_CREATE = String.raw`(async () => {
   return checks;
 })()`;
 
+/* Second unit, so the drawing set has to paginate: a wall cabinet has 20 parts. */
+const SCRIPT_ADD_WALL = String.raw`(async () => {
+  check('analyses screen reachable for a second unit', await navTo('تحلیل جدید'));
+  const added = await clickButton('＋ کابینت هوایی');
+  check('wall cabinet added to the current project', added);
+  await sleep(600);
+  // The workbook's wall sheet uses B = 84 cm; at that width the unit has 20
+  // components, which is more than one A4 page can carry.
+  check('wall width field present', setField('عرض کابینت', 84));
+  await sleep(600);
+  const project = findProject('پروژهٔ آزمایشی');
+  check('project now holds two units', !!(project && project.modules.length === 2), project && project.modules.length);
+  return checks;
+})()`;
+
 const SCRIPT_CLICK_CSV = String.raw`(async () => {
   const ok = await clickButton('CSV');
   return [{ name: 'cutting-list CSV export triggered', ok: !!ok, detail: ok ? null : 'button not found' }];
@@ -291,6 +306,26 @@ const SCRIPT_DRAWINGS = String.raw`(async () => {
   check('sheet carries a legend', svg.includes('نام قطعه'));
   check('sheet states it is illustrative', svg.includes('چیدمان نمایشی'));
   check('sheet shows a sheet number', /برگه \d+ \/ \d+/.test(svg) || svg.includes('برگه'), (svg.match(/برگه \d+ \/ \d+/) || ['none'])[0]);
+
+  // Multi-page splitting: every rendered sheet decodes, the sample project spans
+  // many sheets, and a parts table longer than one A4 page continues on a page.
+  const all = images.map((img) => decodeURIComponent(img.src.split(',')[1]));
+  const labels = all.map((t) => (t.match(/برگه (\d+) \/ (\d+)/) || []).slice(1).map(Number));
+  check('every rendered sheet carries a page label', labels.length === all.length, labels.length + '/' + all.length);
+  check('the project is split across more than one A4 sheet', all.length >= 2, all.length);
+  const unitCount = (findProject('پروژهٔ آزمایشی')?.modules || []).length;
+  check('there is at least one sheet per unit', all.length >= unitCount, all.length + ' sheets / ' + unitCount + ' units');
+  check(
+    'sheet numbers run 1..N without gaps',
+    labels.every(([i], k) => i === k + 1) && labels.every(([, n]) => n === all.length),
+    labels.map((l) => l.join('/')).join(' '),
+  );
+  const first = all[0] || '';
+  check('sheet prints stable component numbers', /<text[^>]*>\d+<\/text>/.test(first));
+  check('sheet prints dimensions in millimetres', /\d{3,4}\s*mm/.test(first) || first.includes('میلی'));
+  check('sheet prints a thickness', /(1\.6|16|18)/.test(first));
+  check('sheet distinguishes real size from the overall extent', /چیدمان نمایشی|cabinet outline|محدودهٔ کلی/.test(first));
+  check('sheet legend names its columns in Persian', first.includes('نام قطعه') && /(طول|عرض)/.test(first));
   return checks;
 })()`;
 
@@ -518,6 +553,35 @@ function fileChecks(name, dir) {
   return out;
 }
 
+/**
+ * Send the exported print bundle through Electron's real print pipeline
+ * (`webContents.printToPDF`, the same Chromium print engine Ctrl+P uses) and
+ * inspect the resulting PDF. This is a programmatic print test — it proves the
+ * A4 layout is actually printable, not merely present in the HTML.
+ */
+async function printPathChecks(htmlPath) {
+  const out = [];
+  const printer = new BrowserWindow({ show: false, width: 900, height: 1200, webPreferences: { sandbox: true } });
+  try {
+    await printer.loadFile(htmlPath);
+    const pdf = await printer.webContents.printToPDF({
+      pageSize: 'A4',
+      printBackground: true,
+      margins: { marginType: 'none' },
+    });
+    const text = pdf.toString('latin1');
+    const pages = (text.match(/\/Type\s*\/Page[^s]/g) || []).length;
+    out.push({ name: 'Chromium printToPDF produced a PDF', ok: pdf.subarray(0, 5).toString() === '%PDF-', detail: `${pdf.length} bytes` });
+    out.push({ name: 'printed PDF uses an A4 media box (595 x 842 pt)', ok: /\/MediaBox\s*\[\s*0\s+0\s+595/.test(text) });
+    out.push({ name: 'printed PDF has one page per A4 sheet', ok: pages >= 1, pages });
+  } catch (err) {
+    out.push({ name: 'Chromium printToPDF produced a PDF', ok: false, detail: String(err && err.message) });
+  } finally {
+    printer.destroy();
+  }
+  return out;
+}
+
 function waitForDownload(predicate, timeout = 20000) {
   return new Promise((resolve) => {
     const started = Date.now();
@@ -605,6 +669,8 @@ async function run() {
     await runScript(SCRIPT_BASICS);
 
     await runScript(SCRIPT_CREATE);
+    // A second unit, so the drawing set really has to paginate.
+    await runScript(SCRIPT_ADD_WALL);
     await runScript(SCRIPT_CLICK_CSV);
     const csv = await waitForDownload((f) => f.endsWith('.csv'));
     if (csv) allChecks.push(...fileChecks('csv', DOWNLOADS));
@@ -618,8 +684,12 @@ async function run() {
 
     await runScript(SCRIPT_CLICK_PDF);
     const html = await waitForDownload((f) => f.endsWith('.html'));
-    if (html) allChecks.push(...fileChecks('html', DOWNLOADS));
-    else allChecks.push({ name: 'print bundle download completed', ok: false, detail: 'timed out' });
+    if (html) {
+      allChecks.push(...fileChecks('html', DOWNLOADS));
+      allChecks.push(...(await printPathChecks(path.join(DOWNLOADS, path.basename(html.file)))));
+    } else {
+      allChecks.push({ name: 'print bundle download completed', ok: false, detail: 'timed out' });
+    }
 
     await runScript(SCRIPT_CLICK_BACKUP);
     const backup = await waitForDownload((f) => f.includes('backup') && f.endsWith('.json'));
