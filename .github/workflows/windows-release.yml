@@ -63,6 +63,17 @@ jobs:
       - name: UI tests
         run: npm run test:web
 
+      # A syntax error in a desktop entry point cannot fail fast on Windows: the
+      # Electron main process shows a blocking dialog and the job sits until it
+      # times out. Catch it on Linux, in seconds.
+      - name: Syntax-check the desktop entry points
+        run: |
+          node --check apps/desktop/smoke-test.cjs
+          node --check apps/desktop/main.cjs
+          node --check apps/desktop/preload.cjs
+          node --check apps/desktop/build-renderer.cjs
+          node --check apps/desktop/verify-package.cjs
+
       - name: Engine typecheck + declaration build
         run: npm run build:engine
 

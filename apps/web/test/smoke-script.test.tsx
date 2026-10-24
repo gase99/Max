@@ -13,6 +13,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { render } from '@testing-library/react';
 import App from '../src/App.js';
 
@@ -68,6 +69,15 @@ async function runScripts(names: string[]): Promise<Check[]> {
 }
 
 describe('electron smoke scripts (executed against the real app)', () => {
+  /**
+   * A syntax error in the desktop script does not fail loudly on Windows: the
+   * Electron main process shows a blocking error dialog, so CI hangs until the
+   * job times out. This check turns that into an instant, local failure.
+   */
+  it('the desktop smoke script parses as JavaScript', () => {
+    expect(() => execFileSync(process.execPath, ['--check', SMOKE_FILE], { stdio: 'pipe' })).not.toThrow();
+  });
+
   afterEach(() => {
     localStorage.clear();
     vi.restoreAllMocks();

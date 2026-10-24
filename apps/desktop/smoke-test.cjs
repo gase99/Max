@@ -426,7 +426,11 @@ function fileChecks(name, dir) {
     out.push({ name: 'CSV file was written to disk', ok: true, detail: `${file} (${raw.length} bytes)` });
     out.push({ name: 'CSV starts with a UTF-8 BOM (Excel-safe Persian)', ok: raw[0] === 0xef && raw[1] === 0xbb && raw[2] === 0xbf });
     out.push({ name: 'CSV uses CRLF line endings', ok: text.includes('\r\n') });
-    out.push({ name: 'CSV has a header row', ok: /\r\n/.test(text) && text.split('\r\n')[0].length > 10, text.split('\r\n')[0].slice(0, 80) });
+    out.push({
+      name: 'CSV has a header row',
+      ok: /\r\n/.test(text) && text.split('\r\n')[0].length > 10,
+      detail: text.split('\r\n')[0].slice(0, 80),
+    });
     out.push({ name: 'CSV contains the workshop project row (968)', ok: /968/.test(text) });
     out.push({ name: 'CSV contains the back panel (984)', ok: /984/.test(text) });
     out.push({ name: 'CSV contains Persian part names', ok: /[\u0600-\u06FF]/.test(text) });
@@ -493,6 +497,15 @@ function waitForDownload(predicate, timeout = 20000) {
   });
 }
 
+/**
+ * Hard watchdog: a CI job must fail with a message, never sit for 40 minutes.
+ */
+const WATCHDOG_MS = 6 * 60 * 1000;
+const watchdog = setTimeout(() => {
+  console.error(`[smoke] watchdog: phase ${phase} exceeded ${WATCHDOG_MS / 1000}s — aborting`);
+  app.exit(1);
+}, WATCHDOG_MS);
+
 async function run() {
   await app.whenReady();
 
@@ -516,6 +529,9 @@ async function run() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      // A hidden window otherwise throttles painting, which makes capturePage()
+      // (and therefore this run) hang forever on CI.
+      backgroundThrottling: false,
     },
   });
 
@@ -586,8 +602,13 @@ async function run() {
     await runScript(SCRIPT_ROBUSTNESS);
 
     // A real screenshot, so a human can confirm Persian glyphs actually render.
+    // The capture is raced against a timeout: a headless GPU-less runner can
+    // refuse to produce a frame, and that must not hang the whole job.
     try {
-      const shot = await win.webContents.capturePage();
+      const shot = await Promise.race([
+        win.webContents.capturePage(),
+        new Promise((_resolve, reject) => setTimeout(() => reject(new Error('capturePage timed out')), 8000)),
+      ]);
       const png = shot.toPNG();
       fs.writeFileSync(path.join(__dirname, 'smoke-screen.png'), png);
       const size = shot.getSize();
@@ -647,6 +668,7 @@ async function run() {
 
   console.log(`\n${report.passed}/${report.total} checks passed (phase ${phase})`);
   console.log(`SMOKE_RESULT ${failed.length === 0 ? 'PASS' : 'FAIL'} ${report.passed}/${report.total}`);
+  clearTimeout(watchdog);
   app.exit(failed.length === 0 ? 0 : 1);
 }
 
