@@ -104,6 +104,47 @@ jobs:
         working-directory: apps/desktop
         run: node verify-package.cjs
 
+      # Runs the real Electron binary against the real built renderer and
+      # exercises the app from the outside: launch, RTL/LTR, calculations,
+      # persistence and the offline guarantee.
+      - name: Runtime smoke test (Electron, Windows)
+        working-directory: apps/desktop
+        run: npx electron smoke-test.cjs
+
+      # Installs the produced NSIS installer silently and confirms the
+      # installed application starts and keeps running.
+      - name: Install the NSIS package and launch the installed app
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem -Path 'apps/desktop/release' -Filter '*Setup*.exe' | Select-Object -First 1
+          if (-not $setup) { Write-Error 'No NSIS installer found'; exit 1 }
+          Write-Host "Installing $($setup.FullName)"
+          $install = Start-Process -FilePath $setup.FullName -ArgumentList '/S' -Wait -PassThru
+          Write-Host "Installer exit code: $($install.ExitCode)"
+
+          $candidates = @(
+            (Join-Path $env:LOCALAPPDATA 'Programs\cabinet-analysis-pro\Cabinet Analysis Pro.exe'),
+            (Join-Path $env:LOCALAPPDATA 'Programs\Cabinet Analysis Pro\Cabinet Analysis Pro.exe'),
+            (Join-Path ${env:ProgramFiles} 'Cabinet Analysis Pro\Cabinet Analysis Pro.exe')
+          )
+          $exe = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $exe) {
+            Write-Host 'Searched:'
+            $candidates | ForEach-Object { Write-Host "  $_" }
+            Write-Host 'Installed tree:'
+            Get-ChildItem (Join-Path $env:LOCALAPPDATA 'Programs') -Recurse -Filter '*.exe' -ErrorAction SilentlyContinue | Select-Object -First 20 FullName | Format-Table -AutoSize
+            Write-Error 'Installed executable not found'; exit 1
+          }
+          Write-Host "Launching $exe"
+          $app = Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 15
+          if ($app.HasExited) {
+            Write-Error "Installed app exited early with code $($app.ExitCode)"
+            exit 1
+          }
+          Write-Host 'Installed application is running — launch verified.'
+          Stop-Process -Id $app.Id -Force
+
       - name: Upload installers
         uses: actions/upload-artifact@v4
         with:
