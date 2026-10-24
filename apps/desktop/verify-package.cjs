@@ -99,6 +99,17 @@ if (asars.length === 0) {
       : fail('app.asar contains no renderer JS assets');
     hasMain ? ok('app.asar contains main.cjs') : fail('app.asar is missing main.cjs');
     hasPreload ? ok('app.asar contains preload.cjs') : fail('app.asar is missing preload.cjs');
+
+    // The packaged renderer is loaded over file://, so asset URLs must be relative.
+    try {
+      const html = asar.extractFile(asars[0], 'app/index.html').toString('utf8');
+      const absolute = [...html.matchAll(/(?:src|href)="(\/[^"]*)"/g)].map((m) => m[1]);
+      absolute.length === 0
+        ? ok('packaged index.html uses relative asset paths (file:// safe)')
+        : fail(`packaged index.html has absolute asset paths: ${absolute.join(', ')} → blank window on launch`);
+    } catch (err) {
+      fail(`could not read app/index.html from app.asar: ${err.message}`);
+    }
   } else {
     const size = fs.statSync(asars[0]).size;
     size > 50 * 1024 ? ok(`app.asar present (${size} bytes)`) : fail('app.asar is implausibly small');

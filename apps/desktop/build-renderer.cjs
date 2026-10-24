@@ -65,6 +65,21 @@ if (!exists(path.join(distDir, 'index.html'))) {
   process.exit(1);
 }
 
+// 1b. Guard: the bundle is loaded over file://, so every asset reference must
+//     be relative. An absolute "/assets/..." reference produces a blank window
+//     in the packaged application (this actually happened once).
+const indexHtml = fs.readFileSync(path.join(distDir, 'index.html'), 'utf8');
+const absoluteRefs = [...indexHtml.matchAll(/(?:src|href)="(\/[^"]*)"/g)].map((m) => m[1]);
+if (absoluteRefs.length > 0) {
+  console.error(
+    '[build-renderer] FATAL: index.html contains absolute asset paths ' +
+      `(${absoluteRefs.join(', ')}). The desktop app is a file:// application and ` +
+      'would show a blank window. Set `base: "./"` in apps/web/vite.config.ts.',
+  );
+  process.exit(1);
+}
+log('relative asset paths verified (file:// compatible)');
+
 // 2. Copy into the desktop root.
 fs.rmSync(destDir, { recursive: true, force: true });
 fs.cpSync(distDir, destDir, { recursive: true });

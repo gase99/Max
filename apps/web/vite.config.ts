@@ -26,6 +26,12 @@ export default defineConfig({
     allowedHosts: true,
     cors: true,
   },
+  // Relative asset URLs. The production bundle is loaded both over http
+  // (web/preview) and over file:// inside the Electron shell; with the default
+  // absolute base ('/'), the file:// build resolves /assets/... against the
+  // filesystem root and the application never mounts. See
+  // docs/07-windows-release.md for the incident.
+  base: './',
   build: {
     outDir: 'dist',
     sourcemap: false,
