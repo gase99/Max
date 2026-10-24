@@ -2,7 +2,7 @@
   "name": "cabinet-analysis-pro",
   "private": true,
   "version": "0.1.0",
-  "description": "Cabinet Analysis Pro \u2014 industrial cabinet & MDF analysis, cutting list and sheet optimisation",
+  "description": "Cabinet Analysis Pro — industrial cabinet & MDF analysis, cutting list and sheet optimisation",
   "workspaces": [
     "packages/*",
     "apps/web"
@@ -19,9 +19,9 @@
     "dist:win": "cd apps/desktop && npm run dist:win"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22.22.2"
   },
   "devDependencies": {
-    "@testing-library/dom": "^10.4.0"
+    "@testing-library/dom": "10.4.0"
   }
 }
