@@ -55,7 +55,7 @@ npm run test:all    # هر دو
  ✓ test/smoke-script.test.tsx (2 tests)
 
  Test Files  4 passed (4)
-      Tests  47 passed (47)
+      Tests  46 passed (46)
 ```
 
 ### فهرست تست‌های رابط کاربری
@@ -107,4 +107,4 @@ npm install --legacy-peer-deps
 npm run test:all
 ```
 
-انتظار: **۱۷۸ تست موفق، ۰ ناموفق** (۱۳۱ موتور + ۴۷ رابط کاربری).
+انتظار: **۱۷۷ تست موفق، ۰ ناموفق** (۱۳۱ موتور + ۴۶ رابط کاربری).
