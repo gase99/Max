@@ -42,11 +42,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # jsdom@30 requires Node >= 22.22.2, and @testing-library/jest-dom@7
       # requires Node >= 22. Node 20 fails the UI test job.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22.22.2'
           cache: npm
@@ -90,9 +90,9 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22.22.2'
           cache: npm
@@ -236,7 +236,7 @@ jobs:
 
       - name: Upload functional test artefacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: functional-test-report-${{ github.sha }}
           if-no-files-found: warn
@@ -327,7 +327,7 @@ jobs:
           Write-Host "::notice title=NSIS install::installer ran, app installed and launched successfully"
 
       - name: Upload installers
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: cabinet-analysis-pro-windows-${{ github.sha }}
           if-no-files-found: error
