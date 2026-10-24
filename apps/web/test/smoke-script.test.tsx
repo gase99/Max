@@ -13,12 +13,17 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { render } from '@testing-library/react';
 import App from '../src/App.js';
 
-// jsdom rewrites import.meta.url to an http(s) URL, so resolve from cwd instead.
-const SMOKE_FILE = resolve(process.cwd(), 'apps', 'desktop', 'smoke-test.cjs');
+// jsdom rewrites import.meta.url to an http(s) URL, so resolve from cwd instead —
+// and tolerate being run from either the repo root or `apps/web`.
+const SMOKE_FILE = [
+  resolve(process.cwd(), 'apps', 'desktop', 'smoke-test.cjs'),
+  resolve(process.cwd(), '..', '..', 'apps', 'desktop', 'smoke-test.cjs'),
+].find((p) => existsSync(p))!;
 const SOURCE = readFileSync(SMOKE_FILE, 'utf8');
 
 /** Body of `const <name> = String.raw` … `;` (raw text, backticks excluded). */

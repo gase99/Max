@@ -20,7 +20,9 @@ results — not re-invented.
 | Excel formula equivalence | ✅ **31/31 blocks + drawer** verified |
 | Automated tests | ✅ **216 passing** (158 engine + 58 UI) |
 | Offline | ✅ no network calls at runtime |
-| Windows installer | ✅ built and launched on a real Windows runner (GitHub Actions) |
+| Windows installer | ✅ built, installed and launched on a real Windows runner (GitHub Actions) |
+| Runtime smoke test | ✅ **116/116** (phase 1) + **12/12** (reopen, separate process) |
+| Repeatable build | ✅ `app.asar` byte-identical across two independent builds |
 | Exploded A4 drawings | ✅ component numbers, exact mm dimensions, bilingual legend |
 | DXF export | ✅ 2D outlines at 1:1 in mm, re-parse verified (no CNC claim) |
 | CNC toolpaths / G-code | ⛔ not implemented — the workbook has no machining data |
@@ -110,6 +112,10 @@ React, the DOM, or any cloud service.
 | [`docs/07-windows-release.md`](docs/07-windows-release.md) | انتشار ویندوز: دریافت نصب‌کننده، نصب، تأییدها و آنچه هنوز تأیید نشده |
 | [`docs/08-exploded-drawings.md`](docs/08-exploded-drawings.md) | نقشهٔ انفجاری A4: چه چیزی دقیق است و چه چیزی نمایشی |
 | [`docs/09-dxf-export.md`](docs/09-dxf-export.md) | خروجی DXF: مشخصات، لایه‌ها، اعتبارسنجی، محدودیت‌ها |
+| [`docs/10-excel-crossvalidation.md`](docs/10-excel-crossvalidation.md) | اعتبارسنجی سلول‌به‌سلول با اکسل، تلورانس، ورودی‌های مرزی |
+| [`docs/11-dxf-review.md`](docs/11-dxf-review.md) | بازبینی DXF: نسخه، واحد، لایه‌ها، قطعات بی‌اعتبار |
+| [`docs/12-workshop-guide.md`](docs/12-workshop-guide.md) | **راهنمای کارگاهی**: نصب، ابعاد، منطق محاسبه، نقشه/DXF، تست‌شده و تأییدنشده، پشتیبان |
+| [`docs/13-phase4-report.md`](docs/13-phase4-report.md) | گزارش نهایی مرحلهٔ ۴: تغییرات، نتایج، SHA-256، محدودیت‌ها |
 
 ---
 

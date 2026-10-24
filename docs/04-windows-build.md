@@ -99,8 +99,8 @@ npm run dist:win
 ## ۶. اجرای تست‌ها
 
 ```bash
-npm run test          # موتور محاسبه + تست طلایی اکسل (۹۲ تست)
-npm run test:web      # رابط کاربری در jsdom (۱۸ تست)
+npm run test          # موتور محاسبه + تست طلایی اکسل + هم‌ارزی سلولی با اکسل (۱۵۸ تست)
+npm run test:web      # رابط کاربری در jsdom + اجرای اسکریپت‌های smoke (۵۸ تست)
 npm run test:all      # هر دو
 ```
 
