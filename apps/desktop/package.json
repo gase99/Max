@@ -2,21 +2,24 @@
   "name": "@cabinet/desktop",
   "version": "0.1.0",
   "private": true,
-  "description": "Cabinet Analysis Pro \u2014 Windows desktop shell (Electron)",
+  "description": "Cabinet Analysis Pro — Windows desktop shell (Electron)",
+  "author": "Cabinet Analysis Pro",
+  "license": "UNLICENSED",
   "main": "main.cjs",
   "scripts": {
-    "start": "npm run build:web && electron .",
-    "build:web": "npm run build -w @cabinet/web && node copy-app.cjs",
-    "dist:win": "npm run build:web && electron-builder --win nsis portable",
-    "dist:dir": "npm run build:web && electron-builder --dir"
+    "build:renderer": "node build-renderer.cjs",
+    "start": "npm run build:renderer && electron .",
+    "dist:win": "npm run build:renderer && electron-builder --win nsis portable --publish never",
+    "dist:dir": "npm run build:renderer && electron-builder --dir --publish never"
   },
   "devDependencies": {
-    "electron": "^33.2.0",
-    "electron-builder": "^25.1.8"
+    "electron": "33.4.11",
+    "electron-builder": "25.1.8"
   },
   "build": {
     "appId": "ir.cabinetanalysis.pro",
     "productName": "Cabinet Analysis Pro",
+    "copyright": "Copyright © 2026 Cabinet Analysis Pro",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -24,12 +27,14 @@
     "files": [
       "main.cjs",
       "preload.cjs",
+      "package.json",
       "app/**/*"
     ],
     "extraMetadata": {
       "main": "main.cjs"
     },
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         {
           "target": "nsis",
@@ -48,9 +53,15 @@
     "nsis": {
       "oneClick": false,
       "perMachine": false,
+      "allowElevation": true,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "shortcutName": "Cabinet Analysis Pro"
+      "createStartMenuShortcut": true,
+      "shortcutName": "Cabinet Analysis Pro",
+      "artifactName": "Cabinet-Analysis-Pro-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "Cabinet-Analysis-Pro-Portable-${version}.${ext}"
     }
   }
 }

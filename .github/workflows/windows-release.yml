@@ -1,0 +1,127 @@
+name: Windows release
+
+# Builds, tests and packages the Windows desktop application.
+#
+# Trigger manually (recommended), or automatically on pushes that touch the
+# application. Pull requests only run the test job, never the packaging job.
+on:
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: 'Publish a draft GitHub Release with the built installers'
+        type: boolean
+        default: false
+  push:
+    branches:
+      - main
+      - 'arena/**'
+      - 'feature/**'
+    paths:
+      - 'packages/**'
+      - 'apps/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/windows-release.yml'
+  pull_request:
+    paths:
+      - 'packages/**'
+      - 'apps/**'
+      - 'package.json'
+      - '.github/workflows/windows-release.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests & build (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund --legacy-peer-deps
+
+      - name: Engine tests (includes Excel golden equivalence)
+        run: npm run test
+
+      - name: UI tests
+        run: npm run test:web
+
+      - name: Engine typecheck + declaration build
+        run: npm run build:engine
+
+      - name: Web production build
+        run: npm run build
+
+  windows-release:
+    name: Package (Windows)
+    needs: test
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install root dependencies
+        run: npm install --no-audit --no-fund --legacy-peer-deps
+
+      - name: Re-run the full test suite before packaging
+        run: npm run test:all
+
+      - name: Install desktop build toolchain
+        working-directory: apps/desktop
+        run: npm ci --no-audit --no-fund
+
+      - name: Build the renderer bundle
+        working-directory: apps/desktop
+        run: npm run build:renderer
+
+      - name: Package the Windows installers
+        working-directory: apps/desktop
+        env:
+          # No code-signing certificate is configured; never attempt to discover one.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npx electron-builder --win nsis portable --publish never
+
+      - name: Verify the artefacts
+        working-directory: apps/desktop
+        run: node verify-package.cjs
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: cabinet-analysis-pro-windows-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            apps/desktop/release/*.exe
+            apps/desktop/release/*.blockmap
+            apps/desktop/release/latest.yml
+
+      - name: Publish draft release
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_release }}
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          name: Cabinet Analysis Pro ${{ github.ref_name }}
+          tag_name: desktop-${{ github.run_number }}
+          files: |
+            apps/desktop/release/*.exe
+            apps/desktop/release/latest.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

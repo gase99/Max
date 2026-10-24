@@ -9,14 +9,14 @@
   ],
   "scripts": {
     "test": "npm run test -w @cabinet/engine",
+    "test:web": "vitest run --root apps/web",
+    "test:all": "npm run test && npm run test:web",
     "build:engine": "npm run build -w @cabinet/engine",
     "dev": "npm run dev -w @cabinet/web",
-    "build": "npm run build -w @cabinet/engine && npm run build -w @cabinet/web",
+    "build": "npm run build -w @cabinet/web",
     "preview": "npm run preview -w @cabinet/web",
     "desktop": "cd apps/desktop && npm start",
-    "dist:win": "cd apps/desktop && npm run dist:win",
-    "test:web": "vitest run --root apps/web",
-    "test:all": "npm run test -w @cabinet/engine && npm run test:web"
+    "dist:win": "cd apps/desktop && npm run dist:win"
   },
   "engines": {
     "node": ">=18"
