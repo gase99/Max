@@ -13,6 +13,7 @@ import MaterialsScreen from './screens/MaterialsScreen.js';
 import PricingScreen from './screens/PricingScreen.js';
 import ProjectsScreen from './screens/ProjectsScreen.js';
 import ReportsScreen from './screens/ReportsScreen.js';
+import ExplodedScreen from './screens/ExplodedScreen.js';
 import SettingsScreen from './screens/SettingsScreen.js';
 
 export type RouteKey =
@@ -27,6 +28,7 @@ export type RouteKey =
   | 'pricing'
   | 'projects'
   | 'reports'
+  | 'exploded'
   | 'settings';
 
 const NAV: { group: string; items: { key: RouteKey; icon: string }[] }[] = [
@@ -40,6 +42,7 @@ const NAV: { group: string; items: { key: RouteKey; icon: string }[] }[] = [
   { group: 'section.production', items: [
     { key: 'cuttingList', icon: '☰' },
     { key: 'optimization', icon: '▦' },
+    { key: 'exploded', icon: '⧉' },
   ] },
   { group: 'section.commercial', items: [
     { key: 'materials', icon: '◈' },
@@ -100,6 +103,8 @@ export default function App() {
         return <ProjectsScreen store={store} t={t} go={go} />;
       case 'reports':
         return <ReportsScreen store={store} t={t} />;
+      case 'exploded':
+        return <ExplodedScreen store={store} t={t} />;
       case 'settings':
         return <SettingsScreen store={store} t={t} />;
     }

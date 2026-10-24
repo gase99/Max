@@ -381,6 +381,30 @@ table.data tfoot td { border-top: 1px solid var(--line); font-weight: 600; backg
 .print-sheet th { background: #eee; }
 .print-sheet .muted { color: #666; }
 
+/* ---------------- exploded drawing sheets ---------------- */
+
+.sheet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+.sheet-card { background: #fff; color: #111; border-radius: var(--radius); padding: 8px; }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font-size: 12px; padding: 2px 4px 6px; color: #111; }
+.sheet-svg { display: block; width: 100%; height: auto; background: #fff; border: 1px solid #ddd; }
+.sheet-issues { margin: 6px 4px 0; padding-inline-start: 16px; font-size: 11px; color: #8a5a00; }
+.btn-sm { padding: 2px 8px; font-size: 11px; }
+
+/* A4 portrait sheets, one per printed page. */
+@page { size: A4 portrait; margin: 0; }
+@media print {
+  .print-sheets { display: block; }
+  .sheet-page {
+    width: 210mm; height: 297mm; padding: 0; margin: 0;
+    page-break-after: always; break-after: page;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sheet-page:last-child { page-break-after: auto; break-after: auto; }
+  .sheet-svg { border: 0; width: 210mm; height: 297mm; }
+  .sheet-issues { display: none; }
+}
+
 /* ---------------- drawing ---------------- */
 
 .drawing-svg { background: #fff; border-radius: var(--radius); width: 100%; height: auto; }

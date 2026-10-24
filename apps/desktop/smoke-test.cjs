@@ -10,7 +10,7 @@
  * It verifies:
  *   - the window loads and React mounts,
  *   - Persian RTL is the default and English LTR works,
- *   - all 12 navigation destinations render,
+ *   - all 13 navigation destinations render,
  *   - the sample project loads and the dashboard shows non-zero results,
  *   - the cutting list is produced and a known workbook-derived dimension
  *     (76.8 cm shelf length -> "768" in millimetre display) is present,
@@ -64,7 +64,7 @@ const RENDERER_SCRIPT = String.raw`
 
   const nav = document.querySelector('.nav');
   const navCount = nav ? nav.querySelectorAll('button').length : 0;
-  check('12 navigation destinations', navCount === 12, navCount);
+  check('13 navigation destinations', navCount === 13, navCount);
 
   // --- sample project + calculations ------------------------------------
   const sampleBtn = byText('button', 'بارگذاری نمونهٔ پروژه');

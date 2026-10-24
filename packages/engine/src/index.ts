@@ -20,3 +20,5 @@ export * from './legacy/drawer.js';
 export * from './cuttingList.js';
 export * from './optimize/nesting.js';
 export * from './pricing.js';
+export * from './exploded.js';
+export * from './dxf.js';

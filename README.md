@@ -18,10 +18,12 @@ results — not re-invented.
 | | |
 |---|---|
 | Excel formula equivalence | ✅ **31/31 blocks + drawer** verified |
-| Automated tests | ✅ **110 passing** (92 engine + 18 UI) |
+| Automated tests | ✅ **178 passing** (131 engine + 47 UI) |
 | Offline | ✅ no network calls at runtime |
-| Windows desktop shell | ✅ Electron shell ready, installer documented (not built in this environment) |
-| CNC / DXF export | ⛔ not implemented (documented) |
+| Windows installer | ✅ built and launched on a real Windows runner (GitHub Actions) |
+| Exploded A4 drawings | ✅ component numbers, exact mm dimensions, bilingual legend |
+| DXF export | ✅ 2D outlines at 1:1 in mm, re-parse verified (no CNC claim) |
+| CNC toolpaths / G-code | ⛔ not implemented — the workbook has no machining data |
 
 See [`docs/05-status-and-roadmap.md`](docs/05-status-and-roadmap.md) for an
 explicit, honest list of what is done, limited, and not done.
@@ -33,7 +35,7 @@ explicit, honest list of what is done, limited, and not done.
 ```bash
 npm install --legacy-peer-deps
 npm run dev          # web app at http://localhost:5173
-npm run test:all     # 110 tests
+npm run test:all     # 178 tests
 ```
 
 Desktop (Windows):
@@ -43,7 +45,9 @@ cd apps/desktop && npm install && npm start
 cd apps/desktop && npm run dist:win      # NSIS installer + portable exe
 ```
 
-Full instructions: [`docs/04-windows-build.md`](docs/04-windows-build.md).
+Full instructions: [`docs/04-windows-build.md`](docs/04-windows-build.md) and
+[`docs/07-windows-release.md`](docs/07-windows-release.md) (how to download the
+built installer from GitHub Actions).
 
 ---
 
@@ -60,6 +64,14 @@ Full instructions: [`docs/04-windows-build.md`](docs/04-windows-build.md).
   All prices come from the user; nothing is hard-coded as market data.
 - **Projects** — multiple cabinets per project, local storage, JSON backup /
   restore, CSV export, printable technical sheet, 2D front/side/plan drawings.
+- **Exploded drawings** — one A4 portrait sheet per module: stable component
+  numbers, millimetre dimensions taken straight from the calculation, a
+  bilingual legend with quantity/thickness/material/edge banding, print-ready
+  black and white. The *arrangement* is illustrative; the *numbers* are not, and
+  the sheet says so.
+- **DXF export** — 2D outlines at 1:1 in millimetres on documented layers,
+  verified by re-parsing the produced file. No holes, no toolpaths, and no claim
+  of CNC-controller compatibility.
 - **Bilingual** — Persian-first RTL with an English LTR mode.
 
 ---
@@ -70,6 +82,8 @@ Full instructions: [`docs/04-windows-build.md`](docs/04-windows-build.md).
 packages/engine/     framework-free TypeScript calculation engine
   src/legacy/        the workbook formulas, verified against Excel
   src/optimize/      sheet nesting
+  src/exploded.ts    exploded-drawing geometry (illustrative layout, exact dims)
+  src/dxf.ts         DXF R12 writer + independent re-parser
   test/fixtures/     golden data extracted from the .xlsx
 apps/web/            React + Vite UI (also runs as the Electron renderer)
 apps/desktop/        Electron shell + electron-builder config
@@ -93,6 +107,9 @@ React, the DOM, or any cloud service.
 | [`docs/04-windows-build.md`](docs/04-windows-build.md) | ساخت نسخهٔ ویندوز و ساختار مخزن |
 | [`docs/05-status-and-roadmap.md`](docs/05-status-and-roadmap.md) | وضعیت، محدودیت‌ها، کارهای باقی‌مانده |
 | [`docs/06-test-report.md`](docs/06-test-report.md) | گزارش اجرای تست‌ها و باگ‌های رفع‌شده |
+| [`docs/07-windows-release.md`](docs/07-windows-release.md) | انتشار ویندوز: دریافت نصب‌کننده، نصب، تأییدها و آنچه هنوز تأیید نشده |
+| [`docs/08-exploded-drawings.md`](docs/08-exploded-drawings.md) | نقشهٔ انفجاری A4: چه چیزی دقیق است و چه چیزی نمایشی |
+| [`docs/09-dxf-export.md`](docs/09-dxf-export.md) | خروجی DXF: مشخصات، لایه‌ها، اعتبارسنجی، محدودیت‌ها |
 
 ---
 

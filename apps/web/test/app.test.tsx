@@ -32,11 +32,11 @@ describe('application shell', () => {
     expect(document.documentElement.lang).toBe('fa');
   });
 
-  it('shows all twelve navigation destinations', () => {
+  it('shows all thirteen navigation destinations', () => {
     render(<App />);
     const expected = [
       'داشبورد', 'تحلیل جدید', 'کابینت زمینی', 'کابینت هوایی', 'کشو',
-      'لیست برش', 'بهینه‌سازی ورق', 'متریال و یراق',
+      'لیست برش', 'بهینه‌سازی ورق', 'نقشهٔ انفجاری', 'متریال و یراق',
       'قیمت و بهای تمام‌شده', 'پروژه‌ها و مشتریان', 'گزارش‌ها و خروجی', 'تنظیمات و ممیزی فرمول',
     ];
     const nav = document.querySelector('.nav') as HTMLElement;
