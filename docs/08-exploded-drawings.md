@@ -19,6 +19,26 @@
 
 خروجی از صفحهٔ **«نقشهٔ انفجاری»** در منوی نرم‌افزار قابل مشاهده، چاپ و ذخیره است.
 
+### نمونهٔ واقعی خروجی
+
+برگه‌های زیر با کد همین مخزن تولید شده‌اند (بدون دستکاری دستی):
+
+| فایل | محتوا |
+|---|---|
+| [`docs/img/exploded-base-cabinet.png`](img/exploded-base-cabinet.png) | کابینت زمینی: ۶ شمارهٔ قطعه، راهنمای دوزبانه، کادر اندازه‌های کلی |
+| [`docs/img/exploded-wall-cabinet.png`](img/exploded-wall-cabinet.png) | کابینت هوایی با ۷ شمارهٔ قطعه (شامل دو طبقه و دو بدنه) |
+| [`docs/img/exploded-base-cabinet.svg`](img/exploded-base-cabinet.svg) | همان برگه به‌صورت برداری (منبع چاپ) |
+
+بازتولید:
+
+```bash
+# داخل مخزن، با ابزار فقط-توسعهٔ رستری (در .gitignore است):
+mkdir -p tools/.render && cd tools/.render && printf '{"private":true}' > package.json
+npm install @resvg/resvg-js vazirmatn && cd ../..
+# برگه را از تابع renderExplodedSvg بگیرید و سپس:
+node tools/render-svg.mjs sheet.svg sheet.png 1600
+```
+
 ---
 
 ## ۲. تفکیک صریح: چه چیزی دقیق و چه چیزی نمایشی است
