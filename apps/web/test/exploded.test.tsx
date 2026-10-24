@@ -14,7 +14,16 @@ import {
   emptyWallCabinet,
   type ExplodeModuleInput,
 } from '@cabinet/engine';
-import { renderExplodedSheetSvgs, renderExplodedSvg, legendColumns, wrapText, scaleLabel } from '../src/explodedSvg.js';
+import {
+  renderExplodedSheetSvgs,
+  renderExplodedSheetPages,
+  renderExplodedSvg,
+  legendColumns,
+  splitLegendRows,
+  SHEET_ROW_LIMIT,
+  wrapText,
+  scaleLabel,
+} from '../src/explodedSvg.js';
 import { layoutDrawing, verifyLayout, type Rect } from '../src/explodedLayout.js';
 
 const materials = [
@@ -327,4 +336,114 @@ describe('DXF export from the screen', () => {
     }
     cleanup();
   }, 30000);
+});
+
+/* ------------------------------------------------------------------ */
+/*  Multi-page splitting for large part sets                           */
+/* ------------------------------------------------------------------ */
+
+describe('multi-page splitting', () => {
+  /** Build a module with `n` distinct panels, using real engine part shapes. */
+  const bigModule = (n: number): ExplodeModuleInput => {
+    const base = calculateGroundCabinet(emptyGroundCabinet()).parts;
+    const parts = Array.from({ length: n }, (_, i) => {
+      const src = base[i % base.length];
+      return {
+        ...src,
+        id: `p${i + 1}`,
+        nameFa: `${src.nameFa} ${i + 1}`,
+        nameEn: `${src.nameEn} ${i + 1}`,
+        length: src.length - i * 0.4,
+        width: src.width,
+      };
+    });
+    return { id: 'big', label: 'کابینت بزرگ', labelEn: 'Large cabinet', kind: 'ground', quantity: 1, parts };
+  };
+
+  const textsOf = (svg: string) =>
+    [...parse(svg).querySelectorAll('text')].map((t) => t.textContent ?? '');
+
+  it('keeps a normal module on exactly one page (unchanged behaviour)', () => {
+    const pages = renderExplodedSheetPages(sheet(), { lang: 'fa', projectName: 'p' });
+    expect(pages).toHaveLength(3);
+    expect(pages.map((p) => p.pageIndex)).toEqual([1, 2, 3]);
+    expect(pages.every((p) => p.pageTotal === 3)).toBe(true);
+  });
+
+  it('splits a module with more parts than fit into numbered pages', () => {
+    const big = buildExplodedSheet([bigModule(30)], { materials });
+    const pages = renderExplodedSheetPages(big, { lang: 'fa', projectName: 'p' });
+    // 12 rows on the drawing sheet, then 18 more on one continuation sheet.
+    expect(pages).toHaveLength(2);
+    expect(pages[0].pageIndex).toBe(1);
+    expect(pages[1].pageIndex).toBe(2);
+    expect(pages[1].pageTotal).toBe(2);
+    expect(textsOf(pages[0].svg)).toContain('برگه 1 / 2');
+    expect(textsOf(pages[1].svg)).toContain('برگه 2 / 2');
+  });
+
+  it('prints every component exactly once across the pages', () => {
+    const count = 30;
+    const mod = bigModule(count);
+    const big = buildExplodedSheet([mod], { materials });
+    const pages = renderExplodedSheetPages(big, { lang: 'fa', projectName: 'p' });
+    const all = pages.flatMap((p) => textsOf(p.svg));
+    // Part names are unique in this fixture, so counting names proves that the
+    // split neither duplicates nor drops a table row.
+    for (const part of mod.parts) {
+      const hits = all.filter((t) => t === part.nameFa).length;
+      expect(hits, `${part.nameFa} appears ${hits} times`).toBe(1);
+    }
+    // The module name itself is printed on every page (inside the header line).
+    expect(pages.every((p) => p.svg.includes('کابینت بزرگ'))).toBe(true);
+  });
+
+  it('draws the geometry on the first page only, never on a continuation', () => {
+    const big = buildExplodedSheet([bigModule(40)], { materials });
+    const pages = renderExplodedSheetPages(big, { lang: 'fa', projectName: 'p' });
+    expect(pages.length).toBeGreaterThan(1);
+    expect(pages[0].svg).toContain('چیدمان نمایشی');
+    for (const page of pages.slice(1)) {
+      expect(page.svg).toContain('ادامهٔ جدول قطعات');
+      expect(page.svg).not.toContain('چیدمان نمایشی');
+      // Continuation sheets are table-only: no drawing frame, no badge leaders.
+      expect(page.svg).not.toContain('<circle');
+    }
+  });
+
+  it('keeps every page inside the A4 sheet, so nothing is clipped at the margin', () => {
+    const big = buildExplodedSheet([bigModule(40)], { materials });
+    for (const page of renderExplodedSheetPages(big, { lang: 'fa', projectName: 'p' })) {
+      const root = parse(page.svg);
+      for (const t of root.querySelectorAll('text')) {
+        const y = Number(t.getAttribute('y'));
+        const x = Number(t.getAttribute('x'));
+        expect(Number.isFinite(y) && Number.isFinite(x)).toBe(true);
+        expect(y).toBeGreaterThan(4);
+        expect(y).toBeLessThan(293);
+        expect(x).toBeGreaterThan(4);
+        expect(x).toBeLessThan(206);
+      }
+    }
+  });
+
+  it('numbers pages across the whole project, not per module', () => {
+    const project = buildExplodedSheet([bigModule(30), modules()[1]], { materials });
+    const pages = renderExplodedSheetPages(project, { lang: 'fa', projectName: 'p' });
+    expect(pages).toHaveLength(3);
+    expect(pages.map((p) => p.pageIndex)).toEqual([1, 2, 3]);
+    expect(pages.map((p) => p.pageTotal)).toEqual([3, 3, 3]);
+  });
+
+  it('splits exactly at the documented row limits', () => {
+    expect(SHEET_ROW_LIMIT.withDrawing).toBe(12);
+    const rows = Array.from({ length: 12 }, (_, i) => i);
+    expect(splitLegendRows(rows)).toHaveLength(1);
+    expect(splitLegendRows([...rows, 12])).toHaveLength(2);
+    expect(splitLegendRows(Array.from({ length: 12 + 26 }, (_, i) => i))).toHaveLength(2);
+    expect(splitLegendRows(Array.from({ length: 12 + 27 }, (_, i) => i))).toHaveLength(3);
+    // No row is lost or duplicated by the split.
+    const flat = splitLegendRows(Array.from({ length: 100 }, (_, i) => i)).flat();
+    expect(flat).toEqual(Array.from({ length: 100 }, (_, i) => i));
+  });
 });

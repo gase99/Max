@@ -36,14 +36,16 @@ export default function NewAnalysis({
     const materialId = 'mdf-white';
     const moduleId = uid('mod');
     const base = { id: moduleId, quantity: 1 };
+    // Pass the id explicitly: `store.current` is still stale on the tick where
+    // the project was just created, which used to drop this first module.
     if (kind === 'ground') {
-      store.addModule({ ...base, kind, label: 'کابینت زمینی', input: emptyGroundCabinet(thickness, materialId) });
+      store.addModule({ ...base, kind, label: 'کابینت زمینی', input: emptyGroundCabinet(thickness, materialId) }, project.id);
       go('ground', moduleId);
     } else if (kind === 'wall') {
-      store.addModule({ ...base, kind, label: 'کابینت هوایی', input: emptyWallCabinet(thickness, materialId) });
+      store.addModule({ ...base, kind, label: 'کابینت هوایی', input: emptyWallCabinet(thickness, materialId) }, project.id);
       go('wall', moduleId);
     } else {
-      store.addModule({ ...base, kind, label: 'کشو', input: emptyDrawer(thickness, materialId) });
+      store.addModule({ ...base, kind, label: 'کشو', input: emptyDrawer(thickness, materialId) }, project.id);
       go('drawers', moduleId);
     }
   };

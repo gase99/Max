@@ -216,6 +216,48 @@ describe('persistence', () => {
   });
 });
 
+describe('new project workflow (regression: first module was dropped)', () => {
+  /**
+   * Quick-add on a fresh installation created the project but lost the cabinet:
+   * `addModule` read the stale `selectedId`. This test fails on that bug.
+   */
+  it('creates a project *and* its first cabinet in one click', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(navBtn('تحلیل جدید'));
+
+    const nameField = [...document.querySelectorAll('.field label')].find((l) =>
+      (l.textContent ?? '').includes('نام پروژه'),
+    )!.parentElement!.querySelector('input')!;
+    await user.type(nameField, 'کارگاه آزمون');
+    await user.click(screen.getByRole('button', { name: '＋ کابینت زمینی' }));
+
+    const saved = JSON.parse(localStorage.getItem('cap.projects.v1') || '[]');
+    expect(saved).toHaveLength(1);
+    expect(saved[0].name).toBe('کارگاه آزمون');
+    expect(saved[0].modules).toHaveLength(1);
+    expect(saved[0].modules[0].kind).toBe('ground');
+
+    // The editor must immediately show the cabinet's fields, not an empty state.
+    const labels = [...document.querySelectorAll('.field label')].map((l) => l.textContent ?? '');
+    expect(labels.some((l) => l.includes('عرض کابینت'))).toBe(true);
+    cleanup();
+  });
+
+  it('adds further cabinets to the same project', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(navBtn('تحلیل جدید'));
+    await user.click(screen.getByRole('button', { name: '＋ کابینت زمینی' }));
+    await user.click(navBtn('کابینت هوایی'));
+    await user.click(screen.getByRole('button', { name: '＋ افزودن' }));
+    const saved = JSON.parse(localStorage.getItem('cap.projects.v1') || '[]');
+    expect(saved[0].modules).toHaveLength(2);
+    expect(saved[0].modules.map((m: { kind: string }) => m.kind)).toEqual(['ground', 'wall']);
+    cleanup();
+  });
+});
+
 describe('settings & formula audit', () => {
   it('shows the legacy formulas with a verified badge', async () => {
     const user = userEvent.setup();

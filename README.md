@@ -18,7 +18,7 @@ results — not re-invented.
 | | |
 |---|---|
 | Excel formula equivalence | ✅ **31/31 blocks + drawer** verified |
-| Automated tests | ✅ **177 passing** (131 engine + 46 UI) |
+| Automated tests | ✅ **215 passing** (158 engine + 57 UI) |
 | Offline | ✅ no network calls at runtime |
 | Windows installer | ✅ built and launched on a real Windows runner (GitHub Actions) |
 | Exploded A4 drawings | ✅ component numbers, exact mm dimensions, bilingual legend |
@@ -35,7 +35,7 @@ explicit, honest list of what is done, limited, and not done.
 ```bash
 npm install --legacy-peer-deps
 npm run dev          # web app at http://localhost:5173
-npm run test:all     # 177 tests
+npm run test:all     # 215 tests
 ```
 
 Desktop (Windows):

@@ -51,8 +51,11 @@ jobs:
           node-version: '22.22.2'
           cache: npm
 
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund --legacy-peer-deps
+      # `npm ci` (not `npm install`) so CI resolves exactly the committed
+      # lockfile — a drifting dependency can never be the reason a build passes
+      # here and fails on the workshop PC.
+      - name: Install dependencies (exact lockfile)
+        run: npm ci --no-audit --no-fund --legacy-peer-deps
 
       - name: Engine tests (includes Excel golden equivalence)
         run: npm run test
@@ -83,8 +86,8 @@ jobs:
           node-version: '22.22.2'
           cache: npm
 
-      - name: Install root dependencies
-        run: npm install --no-audit --no-fund --legacy-peer-deps
+      - name: Install root dependencies (exact lockfile)
+        run: npm ci --no-audit --no-fund --legacy-peer-deps
 
       - name: Re-run the full test suite before packaging
         run: npm run test:all
@@ -108,37 +111,132 @@ jobs:
         working-directory: apps/desktop
         run: node verify-package.cjs
 
+      # Stage 1 of the workshop-readiness plan: the installable version and the
+      # SHA-256 of every installer must be part of the CI output, not something a
+      # human computes afterwards. The same hashes go to SHA256SUMS.txt (shipped
+      # as an artifact) and to the job summary.
+      - name: Record version and installer SHA-256
+        shell: pwsh
+        working-directory: apps/desktop
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $exes = Get-ChildItem -Path release -Filter '*.exe' | Sort-Object Name
+          if (-not $exes) {
+            Write-Host "::error title=Checksums::no installer was produced"
+            exit 1
+          }
+          $rows = foreach ($f in $exes) {
+            $hash = (Get-FileHash -Algorithm SHA256 -Path $f.FullName).Hash.ToLower()
+            [pscustomobject]@{ name = $f.Name; sha256 = $hash; bytes = $f.Length }
+            Write-Host "SHA-256  $hash  $($f.Name)  $($f.Length) bytes"
+          }
+          $rows | ForEach-Object { "$($_.sha256)  $($_.name)  $($_.bytes) bytes" } |
+            Set-Content -Encoding ascii -Path SHA256SUMS.txt
+          Get-Content SHA256SUMS.txt | Write-Host
+
+          $info = [ordered]@{
+            version   = $version
+            commit    = $env:GITHUB_SHA
+            branch    = $env:GITHUB_REF_NAME
+            run       = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"
+            node      = (node --version)
+            files     = $rows
+            signed    = $false
+            note      = 'Unsigned x64 NSIS installer + portable exe. SHA-256 covers the exact uploaded bytes.'
+          }
+          $info | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 -Path release-info.json
+          Write-Host (Get-Content release-info.json -Raw)
+
+          $summary = @()
+          $summary += "### Cabinet Analysis Pro $version — Windows artefacts"
+          $summary += ''
+          $summary += '| file | bytes | SHA-256 |'
+          $summary += '|---|---|---|'
+          foreach ($r in $rows) { $summary += "| ``$($r.name)`` | $($r.bytes) | ``$($r.sha256)`` |" }
+          $summary += ''
+          $summary += "Commit: ``$env:GITHUB_SHA`` · Node $(node --version) · unsigned x64 build"
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value ($summary -join "`n")
+          Write-Host "::notice title=Installer SHA-256 ($version)::$(($rows | ForEach-Object { $_.name + ' = ' + $_.sha256 }) -join ' | ')"
+
+      # Repeatability check: build the packaged tree a second time into a
+      # separate output directory and compare app.asar hashes. The NSIS
+      # installer itself carries timestamps, so its bytes are not expected to
+      # repeat; the *application payload* must.
+      - name: Rebuild the payload and compare hashes
+        shell: pwsh
+        working-directory: apps/desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: |
+          npx electron-builder --win dir --config.directories.output=release-rebuild --publish never
+          $a = Get-ChildItem 'release/win-unpacked/resources/app.asar' -ErrorAction SilentlyContinue
+          $b = Get-ChildItem 'release-rebuild/win-unpacked/resources/app.asar' -ErrorAction SilentlyContinue
+          if (-not $a -or -not $b) {
+            Write-Host "::warning title=Repeatability::app.asar missing in one of the two builds; repeatability not proven"
+            exit 0
+          }
+          $h1 = (Get-FileHash -Algorithm SHA256 $a.FullName).Hash.ToLower()
+          $h2 = (Get-FileHash -Algorithm SHA256 $b.FullName).Hash.ToLower()
+          Write-Host "build 1 app.asar $h1 ($($a.Length) bytes)"
+          Write-Host "build 2 app.asar $h2 ($($b.Length) bytes)"
+          if ($h1 -ne $h2) {
+            Write-Host "::error title=Repeatability::two builds of the same commit produced different app.asar payloads"
+            exit 1
+          }
+          Write-Host "::notice title=Repeatability::app.asar is byte-identical across two independent builds ($h1)"
+
       # Runs the real Electron binary against the real built renderer and
-      # exercises the app from the outside: launch, RTL/LTR, calculations,
-      # persistence and the offline guarantee.
-      - name: Runtime smoke test (Electron, Windows)
+      # exercises the app the way a workshop user would — twice: phase 1 with a
+      # fresh profile (create, edit, export, back up, break, recover), then
+      # phase 2 as a *separate process* on the same profile to prove that a
+      # closed-and-reopened app still has the project and its numbers.
+      - name: Functional smoke test, phase 1 (fresh profile)
         shell: pwsh
         working-directory: apps/desktop
         run: |
           Write-Host "electron: $((Get-Command electron -ErrorAction SilentlyContinue).Source)"
-          npx electron smoke-test.cjs 2>&1 | Tee-Object -FilePath smoke.log
+          npx electron smoke-test.cjs --phase=1 --reset 2>&1 | Tee-Object -FilePath smoke.log
           $code = $LASTEXITCODE
           if ($code -ne 0) {
             # Surface the actual reason as a check annotation, because the raw
             # log is not always retrievable by automation.
             $lines = Get-Content smoke.log -ErrorAction SilentlyContinue
-            $bad = ($lines | Select-String -Pattern '✗|\[smoke\]|Error:|not found' | Select-Object -First 6 | ForEach-Object { $_.Line }) -join ' || '
+            $bad = ($lines | Select-String -Pattern '✗|\[smoke\]|Error:|not found' | Select-Object -First 8 | ForEach-Object { $_.Line }) -join ' || '
             if (-not $bad) { $bad = ($lines | Select-Object -Last 8) -join ' || ' }
-            Write-Host "::error title=Electron smoke test failed::$bad"
+            Write-Host "::error title=Functional smoke test (phase 1) failed::$bad"
             exit 1
           }
-          Write-Host "::notice title=Electron smoke test::application launched and all runtime checks passed"
+          $summary = (Get-Content smoke.log | Select-String -Pattern 'checks passed' | Select-Object -Last 1).Line
+          Write-Host "::notice title=Functional smoke test (phase 1)::$summary"
 
-      - name: Upload smoke report
+      - name: Functional smoke test, phase 2 (reopen the same profile)
+        shell: pwsh
+        working-directory: apps/desktop
+        run: |
+          npx electron smoke-test.cjs --phase=2 2>&1 | Tee-Object -FilePath smoke-phase2.log
+          if ($LASTEXITCODE -ne 0) {
+            $lines = Get-Content smoke-phase2.log -ErrorAction SilentlyContinue
+            $bad = ($lines | Select-String -Pattern '✗|\[smoke\]|Error:' | Select-Object -First 8 | ForEach-Object { $_.Line }) -join ' || '
+            Write-Host "::error title=Functional smoke test (phase 2: reopen) failed::$bad"
+            exit 1
+          }
+          $summary = (Get-Content smoke-phase2.log | Select-String -Pattern 'checks passed' | Select-Object -Last 1).Line
+          Write-Host "::notice title=Functional smoke test (phase 2: reopen)::$summary"
+
+      - name: Upload functional test artefacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: smoke-report-${{ github.sha }}
+          name: functional-test-report-${{ github.sha }}
           if-no-files-found: warn
           retention-days: 7
           path: |
             apps/desktop/smoke-report.json
+            apps/desktop/smoke-report-phase2.json
             apps/desktop/smoke.log
+            apps/desktop/smoke-phase2.log
+            apps/desktop/smoke-screen.png
+            apps/desktop/.smoke-downloads/*
 
       # Strict check: launch the packaged application produced by
       # electron-builder (release/win-unpacked). This exercises the real
@@ -227,6 +325,8 @@ jobs:
             apps/desktop/release/*.exe
             apps/desktop/release/*.blockmap
             apps/desktop/release/latest.yml
+            apps/desktop/SHA256SUMS.txt
+            apps/desktop/release-info.json
 
       - name: Publish draft release
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_release }}

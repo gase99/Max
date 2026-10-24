@@ -62,6 +62,18 @@ export interface DxfResult {
     minY: number;
     maxX: number;
     maxY: number;
+    /**
+     * Components that were *not* written because their size is not a real
+     * panel (zero or negative). They are reported instead of being drawn as
+     * degenerate rectangles that a workshop might cut.
+     */
+    skipped: { componentId: string; componentNo: number; length: number; width: number; reason: string }[];
+    /**
+     * Parts the exploded builder refused to draw (zero/negative size). They are
+     * absent from the geometry, so the DXF must say so rather than look
+     * complete.
+     */
+    issues: { moduleId: string; messageFa: string; messageEn: string }[];
   };
 }
 
@@ -118,6 +130,20 @@ export function buildDxf(sheet: ExplodedSheet, options: DxfOptions = {}): DxfRes
   let maxX = -Infinity;
   let maxY = -Infinity;
   let panelCount = 0;
+  const skipped: { componentId: string; componentNo: number; length: number; width: number; reason: string }[] = [];
+  /** Report a panel that cannot be manufactured; never report it twice. */
+  const noteSkipped = (panel: ExplodedPanel) => {
+    if (!(panel.length > 0) || !(panel.width > 0)) {
+      if (skipped.some((s) => s.componentId === panel.componentId)) return;
+      skipped.push({
+        componentId: panel.componentId,
+        componentNo: panel.componentNo,
+        length: panel.length,
+        width: panel.width,
+        reason: !(panel.length > 0) ? 'length is not positive' : 'width is not positive',
+      });
+    }
+  };
 
   const touch = (x: number, y: number) => {
     minX = Math.min(minX, x);
@@ -129,6 +155,9 @@ export function buildDxf(sheet: ExplodedSheet, options: DxfOptions = {}): DxfRes
   // Draw the sheet top-down: the first module occupies the highest row.
   const ordered = [...sheet.drawings].reverse();
   for (const drawing of ordered) {
+    // Check every panel first: `uniqueComponents` collapses repeated component
+    // numbers, which would hide an invalid copy behind a healthy sibling.
+    for (const panel of drawing.panels) noteSkipped(panel);
     const components = uniqueComponents(drawing.panels);
     let cursorX = 0;
     let rowHeight = 0;
@@ -157,6 +186,13 @@ export function buildDxf(sheet: ExplodedSheet, options: DxfOptions = {}): DxfRes
     }
 
     for (const panel of components) {
+      // A panel with no positive size cannot be manufactured; drawing it would
+      // put a zero-height rectangle (or nonsense coordinates) into a file that
+      // feeds a saw. Report it instead.
+      if (!(panel.length > 0) || !(panel.width > 0)) {
+        noteSkipped(panel);
+        continue;
+      }
       const w = panel.length * 10; // length → X
       const h = panel.width * 10; // width  → Y
       const x = cursorX;
@@ -332,6 +368,12 @@ export function buildDxf(sheet: ExplodedSheet, options: DxfOptions = {}): DxfRes
       minY,
       maxX,
       maxY,
+      skipped,
+      issues: sheet.drawings.flatMap((d) =>
+        d.issues
+          .filter((i) => i.severity !== 'info')
+          .map((i) => ({ moduleId: d.moduleId, messageFa: i.messageFa, messageEn: i.messageEn })),
+      ),
     },
   };
 }
@@ -538,4 +580,140 @@ export function dxfRectangles(parsed: ParsedDxf): { width: number; height: numbe
     }
   }
   return rects;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Independent audit of an exported DXF                               */
+/* ------------------------------------------------------------------ */
+
+export interface DxfAudit {
+  /** True only when `problems` is empty. */
+  ok: boolean;
+  problems: string[];
+  facts: {
+    version: string;
+    units: number | null;
+    declaredLayers: string[];
+    usedLayers: string[];
+    counts: Record<string, number>;
+    rectangles: number;
+    extents: { x: number; y: number; w: number; h: number };
+  };
+}
+
+/**
+ * Re-read an exported DXF and check it against the contract in
+ * `docs/10-dxf-review.md`.
+ *
+ * This deliberately re-parses the text instead of trusting `buildDxf`'s own
+ * summary: a file that has been copied, truncated, edited by another program or
+ * written by a future version still gets the same scrutiny.
+ *
+ * Checks: version and units, declared-vs-used layers, an *empty* MACHINING
+ * layer, finite coordinates inside the declared extents, adjacent (overlapping)
+ * panel rectangles, missing EOF.
+ */
+export function auditDxf(text: string): DxfAudit {
+  const problems: string[] = [];
+  const empty: DxfAudit['facts'] = {
+    version: '',
+    units: null,
+    declaredLayers: [],
+    usedLayers: [],
+    counts: {},
+    rectangles: 0,
+    extents: { x: 0, y: 0, w: 0, h: 0 },
+  };
+
+  let parsed: ParsedDxf;
+  try {
+    parsed = parseDxf(text);
+  } catch (err) {
+    return { ok: false, problems: [`unreadable DXF: ${(err as Error).message}`], facts: empty };
+  }
+
+  const unitsMatch = /\$INSUNITS\s*\r?\n\s*70\s*\r?\n\s*4\b/.exec(text.replace(/\r\n/g, '\n'));
+  const units = unitsMatch ? 4 : parsed.units || null;
+
+  const used = [...new Set([...parsed.lines, ...parsed.texts, ...parsed.circles].map((e) => e.layer))].filter(Boolean);
+  const counts: Record<string, number> = {
+    LINE: parsed.lines.length,
+    TEXT: parsed.texts.length,
+    CIRCLE: parsed.circles.length,
+  };
+
+  if (parsed.version !== 'AC1009') problems.push(`version is ${parsed.version || '(missing)'}, expected AC1009 (R12)`);
+  if (units !== 4) problems.push(`units are ${units ?? '(missing)'}, expected 4 ($INSUNITS = millimetres)`);
+  if (!parsed.complete) problems.push('missing EOF marker');
+
+  for (const layer of used) {
+    if (!parsed.layers.includes(layer)) problems.push(`entity on undeclared layer ${layer}`);
+  }
+  for (const required of [DXF_LAYERS.OUTLINE, DXF_LAYERS.MACHINING, DXF_LAYERS.DIM, DXF_LAYERS.LABEL, DXF_LAYERS.FRAME]) {
+    if (!parsed.layers.includes(required)) problems.push(`layer ${required} is not declared`);
+  }
+  // The machining layer must exist (so a future version can fill it) and stay
+  // empty (because the workbook holds no drilling/groove data).
+  const machiningEntities = [
+    ...parsed.lines.map((e) => e.layer),
+    ...parsed.texts.map((e) => e.layer),
+    ...parsed.circles.map((e) => e.layer),
+  ].filter((layer) => layer === DXF_LAYERS.MACHINING);
+  if (machiningEntities.length > 0) {
+    problems.push('MACHINING layer contains entities but no machining data exists');
+  }
+
+  const allCoords: number[] = [];
+  for (const l of parsed.lines) allCoords.push(l.x1, l.y1, l.x2, l.y2);
+  for (const t of parsed.texts) allCoords.push(t.x, t.y);
+  for (const c of parsed.circles) allCoords.push(c.x, c.y);
+  if (allCoords.some((v) => !Number.isFinite(v))) problems.push('non-finite coordinate found');
+
+  const extents = {
+    x: parsed.extMin.x,
+    y: parsed.extMin.y,
+    w: parsed.extMax.x - parsed.extMin.x,
+    h: parsed.extMax.y - parsed.extMin.y,
+  };
+  const slack = 0.01;
+  for (const l of parsed.lines) {
+    for (const [x, y] of [
+      [l.x1, l.y1],
+      [l.x2, l.y2],
+    ]) {
+      if (x < parsed.extMin.x - slack || x > parsed.extMax.x + slack || y < parsed.extMin.y - slack || y > parsed.extMax.y + slack) {
+        problems.push(`coordinate (${x}, ${y}) lies outside the declared extents`);
+        break;
+      }
+    }
+  }
+
+  const rects = dxfRectangles(parsed);
+  const overlaps = (a: (typeof rects)[number], b: (typeof rects)[number]) =>
+    a.x < b.x + b.width - 1e-6 &&
+    b.x < a.x + a.width - 1e-6 &&
+    a.y < b.y + b.height - 1e-6 &&
+    b.y < a.y + a.height - 1e-6;
+  for (let i = 0; i < rects.length; i++) {
+    for (let j = i + 1; j < rects.length; j++) {
+      if (overlaps(rects[i], rects[j])) problems.push(`panel rectangles ${i + 1} and ${j + 1} overlap`);
+    }
+  }
+  for (const r of rects) {
+    if (!(r.width > 0) || !(r.height > 0)) problems.push('a panel rectangle has no area');
+  }
+
+  return {
+    ok: problems.length === 0,
+    problems,
+    facts: {
+      version: parsed.version,
+      units,
+      declaredLayers: parsed.layers,
+      usedLayers: used,
+      counts,
+      rectangles: rects.length,
+      extents,
+    },
+  };
 }

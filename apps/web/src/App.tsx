@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { isRtl, makeT } from './i18n.js';
-import { useStore } from './store.js';
-import { ToastProvider } from './ui.js';
+import { STORAGE_ERROR_EVENT, useStore } from './store.js';
+import { ToastProvider, useToast } from './ui.js';
 import { useProjectComputation } from './selectors.js';
 
 import Dashboard from './screens/Dashboard.js';
@@ -54,6 +54,29 @@ const NAV: { group: string; items: { key: RouteKey; icon: string }[] }[] = [
     { key: 'settings', icon: '⚙' },
   ] },
 ];
+
+/**
+ * Surfaces storage failures instead of letting them disappear.
+ *
+ * A quota error inside `localStorage.setItem` used to propagate out of a React
+ * effect, which unmounts the whole tree. Writes are now non-throwing and land
+ * here as an event, so the user gets a clear warning and keeps working.
+ */
+function StorageWatcher({ message }: { message: string }) {
+  const { push } = useToast();
+  const last = useRef(0);
+  useEffect(() => {
+    const onError = () => {
+      const now = Date.now();
+      if (now - last.current < 4000) return; // one toast per burst, not per keystroke
+      last.current = now;
+      push(message, true);
+    };
+    window.addEventListener(STORAGE_ERROR_EVENT, onError);
+    return () => window.removeEventListener(STORAGE_ERROR_EVENT, onError);
+  }, [push, message]);
+  return null;
+}
 
 export default function App() {
   const store = useStore();
@@ -114,6 +137,7 @@ export default function App() {
 
   return (
     <ToastProvider>
+      <StorageWatcher message={t('toast.storageError')} />
       <div className="shell">
         <aside className="sidebar">
           <div className="brand">

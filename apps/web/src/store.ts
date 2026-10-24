@@ -82,8 +82,30 @@ export function loadProjects(): Project[] {
   return Array.isArray(list) ? list.filter((p) => p && typeof p.id === 'string') : [];
 }
 
+/**
+ * Raised when a write to localStorage fails (quota, private mode, a locked
+ * profile). The UI listens for it and shows a warning instead of dying: a
+ * workshop PC with a full disk must not lose the session silently.
+ */
+export const STORAGE_ERROR_EVENT = 'cap:storage-error';
+
+/** Write to localStorage without ever throwing. Returns false on failure. */
+export function safeWrite(key: string, value: string): boolean {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (err) {
+    try {
+      window.dispatchEvent(new CustomEvent(STORAGE_ERROR_EVENT, { detail: String(err) }));
+    } catch {
+      /* a missing window (SSR/test) is not worth another failure */
+    }
+    return false;
+  }
+}
+
 export function saveProjects(projects: Project[]): void {
-  localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
+  safeWrite(PROJECTS_KEY, JSON.stringify(projects));
 }
 
 export function loadSettings(): AppSettings {
@@ -100,7 +122,7 @@ export function loadSettings(): AppSettings {
 }
 
 export function saveSettings(s: AppSettings): void {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+  safeWrite(SETTINGS_KEY, JSON.stringify(s));
 }
 
 export function defaultEdgeBands(): EdgeBand[] {
@@ -213,7 +235,7 @@ export interface Store {
   updateProject: (id: string, patch: Partial<Project>) => void;
   deleteProject: (id: string) => void;
   duplicateProject: (id: string) => void;
-  addModule: (p: ModuleEntry) => void;
+  addModule: (p: ModuleEntry, projectId?: string) => void;
   updateModule: (moduleId: string, patch: Partial<ModuleEntry>) => void;
   deleteModule: (moduleId: string) => void;
   duplicateModule: (moduleId: string) => void;
@@ -230,8 +252,14 @@ export function useStore(): Store {
   useEffect(() => saveProjects(projects), [projects]);
   useEffect(() => saveSettings(settings), [settings]);
   useEffect(() => {
-    if (selectedId) localStorage.setItem(SELECTED_KEY, selectedId);
-    else localStorage.removeItem(SELECTED_KEY);
+    if (selectedId) safeWrite(SELECTED_KEY, selectedId);
+    else {
+      try {
+        localStorage.removeItem(SELECTED_KEY);
+      } catch {
+        /* nothing to do: the selection is only a convenience */
+      }
+    }
   }, [selectedId]);
 
   const current = useMemo(
@@ -276,15 +304,22 @@ export function useStore(): Store {
     });
   }, []);
 
+  /**
+   * `projectId` exists for callers that have just created a project: the
+   * `selectedId` in their closure is still stale, so relying on it silently
+   * dropped the first module of a brand-new project.
+   */
   const mutateCurrent = useCallback(
-    (fn: (p: Project) => Project) => {
-      setProjects((list) => list.map((p) => (p.id === selectedId ? touch(fn(p)) : p)));
+    (fn: (p: Project) => Project, projectId?: string) => {
+      const target = projectId ?? selectedId;
+      setProjects((list) => list.map((p) => (p.id === target ? touch(fn(p)) : p)));
     },
     [selectedId],
   );
 
   const addModule = useCallback(
-    (m: ModuleEntry) => mutateCurrent((p) => ({ ...p, modules: [...p.modules, m] })),
+    (m: ModuleEntry, projectId?: string) =>
+      mutateCurrent((p) => ({ ...p, modules: [...p.modules, m] }), projectId),
     [mutateCurrent],
   );
 

@@ -23,6 +23,14 @@ export interface SheetOptions {
   date?: string;
   sheetIndex?: number;
   sheetTotal?: number;
+  /**
+   * Print only these legend rows on this page. Used for pagination: a module
+   * with more parts than fit on one A4 sheet is continued on further sheets.
+   * When omitted every component is printed (single-sheet behaviour).
+   */
+  rowSubset?: ExplodedDrawing['panels'];
+  /** Continuation sheet: parts table only, no drawing. */
+  continuation?: boolean;
 }
 
 const PAGE_W = 210;
@@ -63,6 +71,7 @@ const FA = {
   customer: 'مشتری',
   units: 'همهٔ ابعاد به میلی‌متر',
   unitOne: 'واحد',
+  continued: 'ادامهٔ جدول قطعات — این برگه نقشه ندارد',
 };
 
 const EN = {
@@ -90,6 +99,7 @@ const EN = {
   customer: 'Customer',
   units: 'All dimensions in millimetres',
   unitOne: 'unit(s)',
+  continued: 'Parts table continued — this sheet carries no drawing',
 };
 
 type Strings = typeof FA;
@@ -198,12 +208,9 @@ export function renderExplodedSvg(drawing: ExplodedDrawing, options: SheetOption
   const p = (v: number) => n(v);
 
   /* ---- which components get a legend row ---- */
-  const seen = new Set<number>();
-  const rows = drawing.panels.filter((x) => {
-    if (seen.has(x.componentNo)) return false;
-    seen.add(x.componentNo);
-    return true;
-  });
+  const allRows = legendRows(drawing);
+  const rows = options.rowSubset ?? allRows;
+  const continuation = options.continuation === true;
 
   /* ---- footer notes ---- */
   const notes: string[] = [
@@ -239,9 +246,12 @@ export function renderExplodedSvg(drawing: ExplodedDrawing, options: SheetOption
   const titleY = innerBottom - titleH;
   const notesH = noteLines.length * NOTE_LINE;
   const legendH = ROW_H * (rows.length + 1);
-  const legendY = titleY - 3 - notesH - legendH;
-  const notesY = legendY + legendH + 3;
-  const areaH = Math.max(80, legendY - headerBottom - 5);
+  // A continuation sheet carries the rest of the parts table and nothing else,
+  // so it starts straight under the header instead of hanging off the footer.
+  const contTop = headerBottom + 8;
+  const legendY = continuation ? contTop : titleY - 3 - notesH - legendH;
+  const notesY = continuation ? legendY + legendH + 4 : legendY + legendH + 3;
+  const areaH = continuation ? 0 : Math.max(80, legendY - headerBottom - 5);
   // The exploded view gets the left part of the area; a narrow column on the
   // right holds the dimensioned envelope key, so the overall dimensions never
   // have to cross the parts.
@@ -310,138 +320,147 @@ export function renderExplodedSvg(drawing: ExplodedDrawing, options: SheetOption
     )}</text>`,
   );
 
-  /* ---- drawing frame ---- */
-  out.push(
-    `<rect x="${p(draw.x)}" y="${p(draw.y)}" width="${p(draw.w)}" height="${p(draw.h)}" fill="none" stroke="#000" stroke-width="0.25"/>`,
-    `<rect x="${p(key.x)}" y="${p(key.y)}" width="${p(key.w)}" height="${p(key.h)}" fill="none" stroke="#000" stroke-width="0.25"/>`,
-    `<text x="${p(key.x + key.w / 2)}" y="${p(key.y + 5)}" font-size="${FONT_SMALL}" font-weight="700" text-anchor="middle" fill="#000">${esc(
-      rtl ? 'اندازه‌های کلی' : 'Overall sizes',
-    )}</text>`,
-  );
-  out.push(
-    `<text x="${p(rtl ? draw.x + draw.w - 2 : draw.x + 2)}" y="${p(draw.y + 4)}" font-size="${FONT_SMALL}" text-anchor="${
-      rtl ? 'end' : 'start'
-    }" fill="#666">${esc(t.illustrative)}</text>`,
-  );
-
-  /* ---- geometry: side faces first, then the panel face ---- */
-  out.push('<g stroke="#000" stroke-width="0.3" stroke-linejoin="round">');
-  for (const panel of drawing.panels) {
-    for (const side of panel.sides) {
-      out.push(
-        `<path d="${pathOf(side.map((q) => ({ x: px(q.x), y: py(q.y) })))}" fill="#d0d0d0"/>`,
-      );
-    }
-  }
-  for (const panel of drawing.panels) {
-    out.push(`<path d="${pathOf(panel.face.map((q) => ({ x: px(q.x), y: py(q.y) })))}" fill="#ffffff"/>`);
-  }
-  out.push('</g>');
-
-  /* ---- paper-space label layout: badges, callouts, dimensions ---- */
-  const frame: Rect = { x: draw.x, y: draw.y, w: draw.w, h: draw.h };
-  const layout = layoutDrawing(drawing, {
-    frame,
-    scale,
-    originX: tx,
-    originY: ty,
-  });
-
-  for (const badge of layout.badges) {
+  if (continuation) {
+    // No geometry on a continuation sheet: it only continues the table.
     out.push(
-      `<circle cx="${p(badge.x)}" cy="${p(badge.y)}" r="${p(badge.r)}" fill="#ffffff" stroke="#000" stroke-width="0.3"/>`,
-      `<text x="${p(badge.x)}" y="${p(badge.y + badge.r * 0.42)}" font-size="${p(badge.r * 1.15)}" font-weight="700" text-anchor="middle" fill="#000">${badge.componentNo}</text>`,
+      `<text x="${p(rtl ? INNER.x + INNER.w - 2 : INNER.x + 2)}" y="${p(headerBottom + 2)}" font-size="${FONT_SUB}" font-weight="700" text-anchor="${
+        rtl ? 'end' : 'start'
+      }" fill="#000">${esc(t.continued)}</text>`,
     );
-    if (badge.leader) {
-      out.push(
-        `<line x1="${p(badge.x)}" y1="${p(badge.y)}" x2="${p(badge.leader.x2)}" y2="${p(badge.leader.y2)}" stroke="#000" stroke-width="0.2"/>`,
-        `<circle cx="${p(badge.leader.x2)}" cy="${p(badge.leader.y2)}" r="0.7" fill="#000"/>`,
-      );
-    }
-  }
-  for (const callout of layout.callouts) {
+  } else {
+    /* ---- drawing frame ---- */
     out.push(
-      `<text x="${p(callout.x)}" y="${p(callout.y + callout.h * 0.36)}" font-size="${p(callout.h * 0.8)}" font-family="'Consolas','DejaVu Sans Mono',monospace" text-anchor="middle" fill="#000">${esc(
-        callout.text,
+      `<rect x="${p(draw.x)}" y="${p(draw.y)}" width="${p(draw.w)}" height="${p(draw.h)}" fill="none" stroke="#000" stroke-width="0.25"/>`,
+      `<rect x="${p(key.x)}" y="${p(key.y)}" width="${p(key.w)}" height="${p(key.h)}" fill="none" stroke="#000" stroke-width="0.25"/>`,
+      `<text x="${p(key.x + key.w / 2)}" y="${p(key.y + 5)}" font-size="${FONT_SMALL}" font-weight="700" text-anchor="middle" fill="#000">${esc(
+        rtl ? 'اندازه‌های کلی' : 'Overall sizes',
       )}</text>`,
     );
-  }
+    out.push(
+      `<text x="${p(rtl ? draw.x + draw.w - 2 : draw.x + 2)}" y="${p(draw.y + 4)}" font-size="${FONT_SMALL}" text-anchor="${
+        rtl ? 'end' : 'start'
+      }" fill="#666">${esc(t.illustrative)}</text>`,
+    );
 
-  /* ---- dimensioned envelope key (overall sizes, in their own panel) ---- */
-  {
-    const dimGeom = drawing.dimensions;
-    // Fit the envelope extents (model cm) inside the key panel, leaving room for
-    // the dimension lines that sit outside the box.
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
-    for (const d of dimGeom) {
-      for (const q of [d.from, d.to]) {
-        minX = Math.min(minX, q.x);
-        minY = Math.min(minY, q.y);
-        maxX = Math.max(maxX, q.x);
-        maxY = Math.max(maxY, q.y);
+    /* ---- geometry: side faces first, then the panel face ---- */
+    out.push('<g stroke="#000" stroke-width="0.3" stroke-linejoin="round">');
+    for (const panel of drawing.panels) {
+      for (const side of panel.sides) {
+        out.push(
+          `<path d="${pathOf(side.map((q) => ({ x: px(q.x), y: py(q.y) })))}" fill="#d0d0d0"/>`,
+        );
       }
     }
-    const boxW = Math.max(1, maxX - minX) * 10;
-    const boxH = Math.max(1, maxY - minY) * 10;
-    const keyFrame = { x: key.x + 10, y: key.y + 16, w: key.w - 20, h: key.h - 26 };
-    const keyScale = Math.min(keyFrame.w / boxW, keyFrame.h / boxH);
-    const kx = keyFrame.x + (keyFrame.w - boxW * keyScale) / 2 - minX * 10 * keyScale;
-    const ky = keyFrame.y + (keyFrame.h - boxH * keyScale) / 2 - minY * 10 * keyScale;
-    const kp = (v: number) => kx + v * 10 * keyScale;
-    const kq = (v: number) => ky + v * 10 * keyScale;
+    for (const panel of drawing.panels) {
+      out.push(`<path d="${pathOf(panel.face.map((q) => ({ x: px(q.x), y: py(q.y) })))}" fill="#ffffff"/>`);
+    }
+    out.push('</g>');
 
-    const env = drawing.envelope;
-    const W = env.widthCm;
-    const H = env.heightCm;
-    const D = env.depthCm;
-    const gp = (x: number, y: number, z: number) => {
-      const pt = project(x, y, z);
-      return { x: kp(pt.x), y: kq(pt.y) };
-    };
-    const a = gp(-W / 2, 0, D);
-    const bb = gp(W / 2, 0, D);
-    const c = gp(W / 2, H, D);
-    const d2 = gp(-W / 2, H, D);
-    const e = gp(W / 2, 0, 0);
-    const f = gp(W / 2, H, 0);
-    const g = gp(-W / 2, H, 0);
-    const line = (p0: { x: number; y: number }, p1: { x: number; y: number }) =>
-      `<line x1="${p(p0.x)}" y1="${p(p0.y)}" x2="${p(p1.x)}" y2="${p(p1.y)}" stroke="#000" stroke-width="0.3"/>`;
-    out.push(
-      '<g>' + line(a, bb) + line(bb, c) + line(c, d2) + line(d2, a) + line(bb, e) + line(e, f) + line(f, c) + line(f, g) + line(g, d2) + '</g>',
-    );
-
-    const keyLayout = layoutDrawing(drawing, {
-      frame: keyFrame,
-      scale: keyScale,
-      originX: kx,
-      originY: ky,
-      dimOffset: 4,
+    /* ---- paper-space label layout: badges, callouts, dimensions ---- */
+    const frame: Rect = { x: draw.x, y: draw.y, w: draw.w, h: draw.h };
+    const layout = layoutDrawing(drawing, {
+      frame,
+      scale,
+      originX: tx,
+      originY: ty,
     });
-    out.push(
-      `<defs><marker id="ar" markerWidth="5" markerHeight="5" refX="4.6" refY="2.5" orient="auto-start-reverse"><path d="M0,0.5 L4.6,2.5 L0,4.5 z" fill="#000"/></marker></defs>`,
-    );
-    for (const dim of keyLayout.dims) {
+
+    for (const badge of layout.badges) {
       out.push(
-        `<g stroke="#000" stroke-width="0.18"><line x1="${p(dim.witnesses[0].x1)}" y1="${p(dim.witnesses[0].y1)}" x2="${p(dim.witnesses[0].x2)}" y2="${p(dim.witnesses[0].y2)}"/><line x1="${p(dim.witnesses[1].x1)}" y1="${p(dim.witnesses[1].y1)}" x2="${p(dim.witnesses[1].x2)}" y2="${p(dim.witnesses[1].y2)}"/></g>`,
-        `<line x1="${p(dim.x1)}" y1="${p(dim.y1)}" x2="${p(dim.x2)}" y2="${p(dim.y2)}" stroke="#000" stroke-width="0.2" marker-start="url(#ar)" marker-end="url(#ar)"/>`,
+        `<circle cx="${p(badge.x)}" cy="${p(badge.y)}" r="${p(badge.r)}" fill="#ffffff" stroke="#000" stroke-width="0.3"/>`,
+        `<text x="${p(badge.x)}" y="${p(badge.y + badge.r * 0.42)}" font-size="${p(badge.r * 1.15)}" font-weight="700" text-anchor="middle" fill="#000">${badge.componentNo}</text>`,
       );
-      const tw = dim.text.length * (DIM_FONT - 0.4) * 0.58;
+      if (badge.leader) {
+        out.push(
+          `<line x1="${p(badge.x)}" y1="${p(badge.y)}" x2="${p(badge.leader.x2)}" y2="${p(badge.leader.y2)}" stroke="#000" stroke-width="0.2"/>`,
+          `<circle cx="${p(badge.leader.x2)}" cy="${p(badge.leader.y2)}" r="0.7" fill="#000"/>`,
+        );
+      }
+    }
+    for (const callout of layout.callouts) {
       out.push(
-        `<rect x="${p(dim.textX - tw / 2 - 0.8)}" y="${p(dim.textY - (DIM_FONT - 0.4) * 0.85)}" width="${p(tw + 1.6)}" height="${p((DIM_FONT - 0.4) * 1.3)}" fill="#fff"/>`,
-        `<text x="${p(dim.textX)}" y="${p(dim.textY + (DIM_FONT - 0.4) * 0.3)}" font-size="${p(DIM_FONT - 0.4)}" font-family="'Consolas','DejaVu Sans Mono',monospace" text-anchor="middle" fill="#000" transform="rotate(${p(
-          dim.textAngle,
-        )} ${p(dim.textX)} ${p(dim.textY)})">${esc(dim.text)}</text>`,
+        `<text x="${p(callout.x)}" y="${p(callout.y + callout.h * 0.36)}" font-size="${p(callout.h * 0.8)}" font-family="'Consolas','DejaVu Sans Mono',monospace" text-anchor="middle" fill="#000">${esc(
+          callout.text,
+        )}</text>`,
       );
     }
-    out.push(
-      `<text x="${p(key.x + key.w / 2)}" y="${p(key.y + key.h - 3)}" font-size="${FONT_SMALL}" text-anchor="middle" fill="#555">${esc(
-        `${t.scale} ${scaleLabel(keyScale)}`,
-      )}</text>`,
-    );
+
+    /* ---- dimensioned envelope key (overall sizes, in their own panel) ---- */
+    {
+      const dimGeom = drawing.dimensions;
+      // Fit the envelope extents (model cm) inside the key panel, leaving room for
+      // the dimension lines that sit outside the box.
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+      for (const d of dimGeom) {
+        for (const q of [d.from, d.to]) {
+          minX = Math.min(minX, q.x);
+          minY = Math.min(minY, q.y);
+          maxX = Math.max(maxX, q.x);
+          maxY = Math.max(maxY, q.y);
+        }
+      }
+      const boxW = Math.max(1, maxX - minX) * 10;
+      const boxH = Math.max(1, maxY - minY) * 10;
+      const keyFrame = { x: key.x + 10, y: key.y + 16, w: key.w - 20, h: key.h - 26 };
+      const keyScale = Math.min(keyFrame.w / boxW, keyFrame.h / boxH);
+      const kx = keyFrame.x + (keyFrame.w - boxW * keyScale) / 2 - minX * 10 * keyScale;
+      const ky = keyFrame.y + (keyFrame.h - boxH * keyScale) / 2 - minY * 10 * keyScale;
+      const kp = (v: number) => kx + v * 10 * keyScale;
+      const kq = (v: number) => ky + v * 10 * keyScale;
+
+      const env = drawing.envelope;
+      const W = env.widthCm;
+      const H = env.heightCm;
+      const D = env.depthCm;
+      const gp = (x: number, y: number, z: number) => {
+        const pt = project(x, y, z);
+        return { x: kp(pt.x), y: kq(pt.y) };
+      };
+      const a = gp(-W / 2, 0, D);
+      const bb = gp(W / 2, 0, D);
+      const c = gp(W / 2, H, D);
+      const d2 = gp(-W / 2, H, D);
+      const e = gp(W / 2, 0, 0);
+      const f = gp(W / 2, H, 0);
+      const g = gp(-W / 2, H, 0);
+      const line = (p0: { x: number; y: number }, p1: { x: number; y: number }) =>
+        `<line x1="${p(p0.x)}" y1="${p(p0.y)}" x2="${p(p1.x)}" y2="${p(p1.y)}" stroke="#000" stroke-width="0.3"/>`;
+      out.push(
+        '<g>' + line(a, bb) + line(bb, c) + line(c, d2) + line(d2, a) + line(bb, e) + line(e, f) + line(f, c) + line(f, g) + line(g, d2) + '</g>',
+      );
+
+      const keyLayout = layoutDrawing(drawing, {
+        frame: keyFrame,
+        scale: keyScale,
+        originX: kx,
+        originY: ky,
+        dimOffset: 4,
+      });
+      out.push(
+        `<defs><marker id="ar" markerWidth="5" markerHeight="5" refX="4.6" refY="2.5" orient="auto-start-reverse"><path d="M0,0.5 L4.6,2.5 L0,4.5 z" fill="#000"/></marker></defs>`,
+      );
+      for (const dim of keyLayout.dims) {
+        out.push(
+          `<g stroke="#000" stroke-width="0.18"><line x1="${p(dim.witnesses[0].x1)}" y1="${p(dim.witnesses[0].y1)}" x2="${p(dim.witnesses[0].x2)}" y2="${p(dim.witnesses[0].y2)}"/><line x1="${p(dim.witnesses[1].x1)}" y1="${p(dim.witnesses[1].y1)}" x2="${p(dim.witnesses[1].x2)}" y2="${p(dim.witnesses[1].y2)}"/></g>`,
+          `<line x1="${p(dim.x1)}" y1="${p(dim.y1)}" x2="${p(dim.x2)}" y2="${p(dim.y2)}" stroke="#000" stroke-width="0.2" marker-start="url(#ar)" marker-end="url(#ar)"/>`,
+        );
+        const tw = dim.text.length * (DIM_FONT - 0.4) * 0.58;
+        out.push(
+          `<rect x="${p(dim.textX - tw / 2 - 0.8)}" y="${p(dim.textY - (DIM_FONT - 0.4) * 0.85)}" width="${p(tw + 1.6)}" height="${p((DIM_FONT - 0.4) * 1.3)}" fill="#fff"/>`,
+          `<text x="${p(dim.textX)}" y="${p(dim.textY + (DIM_FONT - 0.4) * 0.3)}" font-size="${p(DIM_FONT - 0.4)}" font-family="'Consolas','DejaVu Sans Mono',monospace" text-anchor="middle" fill="#000" transform="rotate(${p(
+            dim.textAngle,
+          )} ${p(dim.textX)} ${p(dim.textY)})">${esc(dim.text)}</text>`,
+        );
+      }
+      out.push(
+        `<text x="${p(key.x + key.w / 2)}" y="${p(key.y + key.h - 3)}" font-size="${FONT_SMALL}" text-anchor="middle" fill="#555">${esc(
+          `${t.scale} ${scaleLabel(keyScale)}`,
+        )}</text>`,
+      );
+    }
   }
 
   /* ---- legend ---- */
@@ -538,9 +557,110 @@ export function renderExplodedSvg(drawing: ExplodedDrawing, options: SheetOption
   return out.join('\n');
 }
 
-/** All sheets of a project, each as its own A4 page. */
-export function renderExplodedSheetSvgs(sheet: ExplodedSheet, options: SheetOptions): string[] {
-  return sheet.drawings.map((d, i) =>
-    renderExplodedSvg(d, { ...options, sheetIndex: i + 1, sheetTotal: sheet.drawings.length }),
+/** One legend row per component number, in drawing order. */
+export function legendRows(drawing: ExplodedDrawing): ExplodedDrawing['panels'] {
+  const seen = new Set<number>();
+  return drawing.panels.filter((x) => {
+    if (seen.has(x.componentNo)) return false;
+    seen.add(x.componentNo);
+    return true;
+  });
+}
+
+/**
+ * Rows that fit on a A4 sheet without pushing the table into the title block.
+ *
+ * The first sheet of a module also carries the drawing and the envelope key, so
+ * it has less room than a continuation sheet that holds nothing but the table.
+ * These numbers are derived from the page geometry (297 − 24 header − 12 title
+ * block − footer notes ≈ 230 mm of usable height, 4.6 mm per row) with a
+ * deliberate safety margin; `multi-page drawing` tests assert the resulting
+ * sheets never overlap.
+ */
+export const SHEET_ROW_LIMIT = { withDrawing: 12, continuation: 26 } as const;
+
+/** Split legend rows into page-sized chunks: first chunk with the drawing. */
+export function splitLegendRows<T>(
+  rows: T[],
+  limits: { withDrawing: number; continuation: number } = SHEET_ROW_LIMIT,
+): T[][] {
+  if (rows.length === 0) return [[]];
+  if (rows.length <= limits.withDrawing) return [rows];
+  const chunks: T[][] = [rows.slice(0, limits.withDrawing)];
+  let cursor = limits.withDrawing;
+  while (cursor < rows.length) {
+    chunks.push(rows.slice(cursor, cursor + limits.continuation));
+    cursor += limits.continuation;
+  }
+  return chunks;
+}
+
+/**
+ * Every page of one module: the first sheet holds the drawing plus as many
+ * legend rows as fit, later sheets continue the table. A module that fits on
+ * one sheet always yields exactly one page (unchanged behaviour).
+ */
+export function renderExplodedPages(
+  drawing: ExplodedDrawing,
+  options: SheetOptions,
+): string[] {
+  const chunks = splitLegendRows(legendRows(drawing));
+  return chunks.map((rowSubset, i) =>
+    renderExplodedSvg(drawing, {
+      ...options,
+      rowSubset,
+      continuation: i > 0,
+      // Numbering is assigned by renderExplodedSheetSvgs, which knows the
+      // project-wide page count. Single-module calls number their own pages.
+      sheetIndex: options.sheetIndex ?? (chunks.length > 1 ? i + 1 : undefined),
+      sheetTotal: options.sheetTotal ?? (chunks.length > 1 ? chunks.length : undefined),
+    }),
   );
+}
+
+export interface ExplodedPage {
+  svg: string;
+  /** Index into `sheet.drawings` (the module this page belongs to). */
+  drawingIndex: number;
+  /** Page number and page count across the whole project. */
+  pageIndex: number;
+  pageTotal: number;
+}
+
+/**
+ * All pages of a project, in print order, paginating modules whose parts table
+ * does not fit on one sheet. Page numbers run across the whole project so a
+ * workshop print-out is unambiguous.
+ */
+export function renderExplodedSheetPages(
+  sheet: ExplodedSheet,
+  options: SheetOptions,
+): ExplodedPage[] {
+  const plan = sheet.drawings.map((d) => splitLegendRows(legendRows(d)));
+  const total = plan.reduce((sum, chunks) => sum + chunks.length, 0);
+  const pages: ExplodedPage[] = [];
+  let index = 0;
+  sheet.drawings.forEach((drawing, m) => {
+    plan[m].forEach((rowSubset, i) => {
+      index += 1;
+      pages.push({
+        svg: renderExplodedSvg(drawing, {
+          ...options,
+          rowSubset,
+          continuation: i > 0,
+          sheetIndex: index,
+          sheetTotal: total,
+        }),
+        drawingIndex: m,
+        pageIndex: index,
+        pageTotal: total,
+      });
+    });
+  });
+  return pages;
+}
+
+/** Convenience wrapper: the SVG of every page, in print order. */
+export function renderExplodedSheetSvgs(sheet: ExplodedSheet, options: SheetOptions): string[] {
+  return renderExplodedSheetPages(sheet, options).map((p) => p.svg);
 }

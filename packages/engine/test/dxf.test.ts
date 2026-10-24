@@ -11,6 +11,7 @@ import {
   emptyGroundCabinet,
   emptyWallCabinet,
   parseDxf,
+  auditDxf,
   DXF_LAYERS,
   type ExplodeModuleInput,
 } from '../src/index.js';
@@ -221,5 +222,119 @@ describe('DXF export — geometry fidelity', () => {
     expect(parsed.complete).toBe(true);
     expect(parsed.lines).toHaveLength(0);
     expect(buildDxf(empty).summary.panels).toBe(0);
+  });
+});
+
+describe('DXF audit — independent re-read of the exported file', () => {
+  it('finds no problems in a file this exporter produced', () => {
+    const audit = auditDxf(buildDxf(sheetOf()).dxf);
+    expect(audit.problems).toEqual([]);
+    expect(audit.ok).toBe(true);
+    expect(audit.facts.version).toBe('AC1009');
+    expect(audit.facts.units).toBe(4);
+    expect(audit.facts.rectangles).toBeGreaterThan(0);
+    // Every drawn layer is declared, and MACHINING is declared but unused.
+    for (const layer of audit.facts.usedLayers) expect(audit.facts.declaredLayers).toContain(layer);
+    expect(audit.facts.declaredLayers).toContain(DXF_LAYERS.MACHINING);
+    expect(audit.facts.usedLayers).not.toContain(DXF_LAYERS.MACHINING);
+  });
+
+  it('reports 1:1 millimetre coordinates: a 768 mm shelf is a 768 unit rectangle', () => {
+    const parsed = parseDxf(buildDxf(sheetOf()).dxf);
+    const rects = dxfRectangles(parsed);
+    // Ground cabinet, B = 80: shelf = 76.8 cm → 768 mm, rail = 7 cm → 70 mm.
+    expect(rects.some((r) => Math.abs(r.width - 768) < 0.01)).toBe(true);
+    // The rail is 76.8 cm long and only 7 cm wide: length → X, width → Y.
+    expect(rects.some((r) => Math.abs(r.width - 768) < 0.01 && Math.abs(r.height - 70) < 0.01)).toBe(true);
+    // Faces keep their real orientation: a 58 × 73.4 cm body is 580 × 734 mm.
+    expect(rects.some((r) => Math.abs(r.width - 734) < 0.01 && Math.abs(r.height - 580) < 0.01)).toBe(true);
+  });
+
+  it('rejects a truncated file instead of silently accepting it', () => {
+    const { dxf } = buildDxf(sheetOf());
+    const truncated = dxf.slice(0, Math.floor(dxf.length / 3));
+    const audit = auditDxf(truncated);
+    expect(audit.ok).toBe(false);
+    expect(audit.problems.length).toBeGreaterThan(0);
+  });
+
+  it('detects a machining entity if one is ever smuggled into MACHINING', () => {
+    const { dxf } = buildDxf(sheetOf());
+    const tampered = dxf.replace(/\r\n0\r\nLINE\r\n8\r\nOUTLINE/, '\r\n0\r\nLINE\r\n8\r\nMACHINING');
+    const audit = auditDxf(tampered);
+    expect(audit.ok).toBe(false);
+    expect(audit.problems.join(' ')).toMatch(/MACHINING/);
+  });
+
+  it('detects a coordinate outside the declared extents', () => {
+    const { dxf } = buildDxf(sheetOf());
+    const tampered = dxf.replace('\r\n10\r\n0.0000\r\n20\r\n0.0000\r\n30\r\n0.0000\r\n11\r\n', '\r\n10\r\n-99999.0000\r\n20\r\n0.0000\r\n30\r\n0.0000\r\n11\r\n');
+    const audit = auditDxf(tampered);
+    expect(audit.problems.join(' ')).toMatch(/outside the declared extents/);
+  });
+});
+
+describe('DXF audit — parts that cannot be manufactured', () => {
+  const withBrokenPart = (): ExplodeModuleInput[] => {
+    const base = modules()[0];
+    return [
+      {
+        ...base,
+        parts: [
+          ...base.parts,
+          { ...base.parts[0], id: 'zero', nameFa: 'قطعهٔ صفر', nameEn: 'Zero panel', length: 0, width: 0 },
+          { ...base.parts[0], id: 'negative', nameFa: 'قطعهٔ منفی', nameEn: 'Negative panel', length: -10, width: 20 },
+        ],
+      },
+    ];
+  };
+
+  it('omits a zero or negative panel and reports it, instead of drawing nonsense', () => {
+    const { dxf, summary } = buildDxf(sheetOf(withBrokenPart()));
+    // The exploded builder drops the unusable panels and records why; the DXF
+    // surfaces those notes so the file is never silently incomplete.
+    expect(summary.issues.length).toBeGreaterThanOrEqual(2);
+    expect(summary.issues.map((i) => i.messageEn).join(' ')).toMatch(/no valid dimensions/);
+    for (const i of summary.issues) {
+      expect(i.moduleId).toBeTruthy();
+      expect(i.messageFa.length).toBeGreaterThan(0);
+    }
+    // The healthy panels are still exported and the file still audits clean.
+    expect(summary.panels).toBeGreaterThan(0);
+    expect(auditDxf(dxf).problems).toEqual([]);
+    // No degenerate rectangle made it into the file.
+    for (const r of dxfRectangles(parseDxf(dxf))) {
+      expect(r.width).toBeGreaterThan(0);
+      expect(r.height).toBeGreaterThan(0);
+    }
+  });
+
+  it('also skips an invalid panel when buildDxf receives it directly', () => {
+    // Defensive path: a caller that builds the sheet by hand must still get a
+    // clean file plus an explicit skip record.
+    const sheet = sheetOf();
+    const drawing = sheet.drawings[0];
+    const injected = {
+      ...sheet,
+      drawings: [
+        {
+          ...drawing,
+          panels: [
+            ...drawing.panels,
+            { ...drawing.panels[0], componentId: 'X-99', componentNo: 99, length: 0, width: 0 },
+          ],
+        },
+      ],
+    };
+    const { dxf, summary } = buildDxf(injected);
+    expect(summary.skipped).toHaveLength(1);
+    expect(summary.skipped[0].componentId).toBe('X-99');
+    expect(auditDxf(dxf).problems).toEqual([]);
+  });
+
+  it('reports nothing skipped, and no issues, for a healthy project', () => {
+    const { summary } = buildDxf(sheetOf());
+    expect(summary.skipped).toEqual([]);
+    expect(summary.issues).toEqual([]);
   });
 });

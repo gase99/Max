@@ -140,6 +140,10 @@ const fa: Dict = {
   'exp.sub': 'برگهٔ A4 برای هر ماژول، با شمارهٔ قطعه، ابعاد دقیق و راهنما',
   'exp.none': 'برای این پروژه قطعه‌ای محاسبه نشده است.',
   'exp.print': 'چاپ / پیش‌نمایش چاپ',
+  'exp.sheetOf': 'برگهٔ {i} از {n}',
+  'exp.dxfAuditFailed': 'بازبینی فایل DXF ناموفق بود',
+  'exp.dxfRects': 'مستطیل بازبینی‌شده',
+  'exp.dxfIssues': 'قطعهٔ ناقص گزارش‌شده',
   'exp.pdf': 'ذخیرهٔ PDF (از مسیر چاپ)',
   'exp.saved': 'فایل نقشه ذخیره شد.',
   'exp.hint':
@@ -171,6 +175,7 @@ const fa: Dict = {
   'toast.imported': 'بازیابی انجام شد',
   'toast.importError': 'فایل پشتیبان معتبر نیست',
   'toast.noProject': 'ابتدا یک پروژه انتخاب یا ایجاد کنید',
+  'toast.storageError': 'نوشتن روی حافظهٔ محلی ممکن نشد؛ تغییرات ذخیره نمی‌شوند. فضای دیسک و دسترسی پوشه را بررسی کنید.',
 };
 
 const en: Dict = {
@@ -311,6 +316,10 @@ const en: Dict = {
   'exp.sub': 'One A4 sheet per module, with component numbers, exact dimensions and a legend',
   'exp.none': 'This project has no calculated panels.',
   'exp.print': 'Print / print preview',
+  'exp.sheetOf': 'Sheet {i} of {n}',
+  'exp.dxfAuditFailed': 'DXF self-check failed',
+  'exp.dxfRects': 'rectangles verified',
+  'exp.dxfIssues': 'incomplete parts reported',
   'exp.pdf': 'Save as PDF (via print)',
   'exp.saved': 'Drawing file saved.',
   'exp.hint':
@@ -342,6 +351,7 @@ const en: Dict = {
   'toast.imported': 'Backup restored',
   'toast.importError': 'Invalid backup file',
   'toast.noProject': 'Select or create a project first',
+  'toast.storageError': 'Could not write to local storage; changes are not being saved. Check free disk space and folder permissions.',
 };
 
 const dicts: Record<Lang, Dict> = { fa, en };

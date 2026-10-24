@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import { buildDxf, buildExplodedSheet } from '@cabinet/engine';
+import { auditDxf, buildDxf, buildExplodedSheet } from '@cabinet/engine';
 import type { ExplodeModuleInput } from '@cabinet/engine';
 import type { Store } from '../store.js';
 import { Card, PageHead, Hint, useToast } from '../ui.js';
 import { downloadFile, safeFilename } from '../exporters.js';
-import { renderExplodedSheetSvgs } from '../explodedSvg.js';
+import { renderExplodedSheetPages } from '../explodedSvg.js';
 import { computeModule } from '../selectors.js';
 
 /**
@@ -50,9 +50,14 @@ export function ExplodedGallery({
   const lang = store.settings.lang === 'fa' ? 'fa' : 'en';
   const project = store.current;
 
-  const svgs = useMemo(() => {
-    if (!sheet || !project) return [] as string[];
-    return renderExplodedSheetSvgs(sheet, {
+  /**
+   * Every printed page, in order. A module whose parts table does not fit on one
+   * A4 sheet continues on further pages, so this can be longer than
+   * `sheet.drawings`.
+   */
+  const pages = useMemo(() => {
+    if (!sheet || !project) return [];
+    return renderExplodedSheetPages(sheet, {
       lang,
       projectName: project.name,
       customer: project.customer,
@@ -61,11 +66,11 @@ export function ExplodedGallery({
   }, [sheet, project, lang]);
 
   if (!project) return <Hint kind="warn">{t('toast.noProject')}</Hint>;
-  if (!sheet || !svgs.length) return <Hint kind="warn">{t('exp.none')}</Hint>;
+  if (!sheet || !pages.length) return <Hint kind="warn">{t('exp.none')}</Hint>;
 
   const downloadSvg = (index: number) => {
     const name = `drawing-${safeFilename(project.name)}-${index + 1}.svg`;
-    downloadFile(name, svgs[index], 'image/svg+xml;charset=utf-8');
+    downloadFile(name, pages[index].svg, 'image/svg+xml;charset=utf-8');
     push(t('exp.saved'));
   };
 
@@ -74,16 +79,24 @@ export function ExplodedGallery({
     const { dxf, summary } = buildDxf(sheet);
     // ASCII DXF is a text format; bytes are written as-is, no BOM.
     downloadFile(`drawings-${safeFilename(project.name)}.dxf`, dxf, 'application/dxf;charset=ascii');
-    push(`${t('exp.dxfSaved')} — ${summary.panels} ${t('cut.part')} · ${summary.units}`);
+    // The file is re-read before the user is told it is fine: a truncated or
+    // malformed export must never be reported as saved.
+    const audit = auditDxf(dxf);
+    if (!audit.ok) {
+      push(`${t('exp.dxfAuditFailed')} — ${audit.problems[0]}`, true);
+      return;
+    }
+    const skipped = summary.issues.length ? ` · ${summary.issues.length} ${t('exp.dxfIssues')}` : '';
+    push(`${t('exp.dxfSaved')} — ${summary.panels} ${t('cut.part')} · ${audit.facts.rectangles} ${t('exp.dxfRects')} · ${summary.units}${skipped}`);
   };
 
   const downloadAll = () => {
     // A single self-contained HTML file: open it, then Ctrl+P → "Save as PDF".
     // This is the only route to PDF that works identically in the browser and in
     // the installed Windows app, with no extra dependency.
-    const pages = svgs
+    const sections = pages
       .map(
-        (svg) =>
+        ({ svg }) =>
           `<section class="page">${svg.replace(
             /^<svg([^>]*)>/,
             (m, attrs) => `<svg${attrs.replace(/width="[^"]*"/, 'width="100%"').replace(/height="[^"]*"/, '')}>`,
@@ -102,7 +115,7 @@ export function ExplodedGallery({
   section.page svg { display: block; width: 100%; height: auto; }
   @media print { body { background: #fff; } section.page { margin: 0; box-shadow: none; } }
 </style></head>
-<body>${pages}</body></html>`;
+<body>${sections}</body></html>`;
     downloadFile(`drawings-${safeFilename(project.name)}.html`, html, 'text/html;charset=utf-8');
     push(t('exp.saved'));
   };
@@ -122,32 +135,39 @@ export function ExplodedGallery({
       </div>
       <Hint>{t('exp.hint')}</Hint>
       <div className="sheet-grid print-sheets">
-        {sheet.drawings.map((d, i) => (
-          <div key={d.moduleId} className="sheet-card sheet-page">
-            <div className="sheet-head">
-              <strong>
-                {t('exp.module')} {d.moduleNo} — {d.moduleLabel}
-              </strong>
-              <button className="btn btn-sm no-print" onClick={() => downloadSvg(i)}>
-                ⭳ SVG
-              </button>
+        {pages.map((page, i) => {
+          const d = sheet.drawings[page.drawingIndex];
+          return (
+            <div key={`${d.moduleId}-${page.pageIndex}`} className="sheet-card sheet-page">
+              <div className="sheet-head">
+                <strong>
+                  {t('exp.module')} {d.moduleNo} — {d.moduleLabel}
+                  {' · '}
+                  {t('exp.sheetOf')
+                    .replace('{i}', String(page.pageIndex))
+                    .replace('{n}', String(page.pageTotal))}
+                </strong>
+                <button className="btn btn-sm no-print" onClick={() => downloadSvg(i)}>
+                  ⭳ SVG
+                </button>
+              </div>
+              <img
+                className="sheet-svg"
+                alt={`${t('exp.alt')} ${d.moduleLabel}`}
+                src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(page.svg)}`}
+              />
+              {page.pageIndex === i + 1 && d.issues.filter((x) => x.severity === 'warning').length ? (
+                <ul className="sheet-issues no-print">
+                  {d.issues
+                    .filter((x) => x.severity === 'warning')
+                    .map((x, k) => (
+                      <li key={k}>{lang === 'fa' ? x.messageFa : x.messageEn}</li>
+                    ))}
+                </ul>
+              ) : null}
             </div>
-            <img
-              className="sheet-svg"
-              alt={`${t('exp.alt')} ${d.moduleLabel}`}
-              src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgs[i])}`}
-            />
-            {d.issues.filter((x) => x.severity === 'warning').length ? (
-              <ul className="sheet-issues no-print">
-                {d.issues
-                  .filter((x) => x.severity === 'warning')
-                  .map((x, k) => (
-                    <li key={k}>{lang === 'fa' ? x.messageFa : x.messageEn}</li>
-                  ))}
-              </ul>
-            ) : null}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </>
   );
