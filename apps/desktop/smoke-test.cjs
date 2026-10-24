@@ -134,6 +134,9 @@ const PRELUDE = String.raw`
   const projectsRaw = () => {
     try { return JSON.parse(localStorage.getItem('cap.projects.v1') || '[]'); } catch (e) { return null; }
   };
+  /** The app may already hold the sample project, so look projects up by name. */
+  const findProject = (needle) =>
+    (projectsRaw() || []).find((p) => p && typeof p.name === 'string' && p.name.includes(needle)) || null;
 `;
 
 /* ------------------------------------------------------------------ */
@@ -226,9 +229,10 @@ const SCRIPT_CREATE = String.raw`(async () => {
   await sleep(600);
 
   const projects = projectsRaw();
-  check('project persisted after creation', Array.isArray(projects) && projects.length === 1, projects ? projects.length : 'unreadable');
-  check('project kept the typed name', !!(projects && projects[0] && projects[0].name.includes('پروژهٔ آزمایشی')), projects && projects[0] && projects[0].name);
-  check('project has one module', !!(projects && projects[0] && projects[0].modules.length === 1), projects && projects[0] && projects[0].modules.length);
+  const created = findProject('پروژهٔ آزمایشی');
+  check('project persisted after creation', !!created, projects ? projects.length + ' project(s)' : 'unreadable');
+  check('project kept the typed name', !!(created && created.name.includes('پروژهٔ آزمایشی')), created && created.name);
+  check('new project has exactly one module', !!(created && created.modules.length === 1), created && created.modules.length);
 
   // Enter the workbook row B = 100, body length 70.4 (analiz pro.2, sheet
   // «کابینت زمینی» row 3) so the back panel is 70.4 + 0.8 = 71.2 cm.
@@ -244,8 +248,7 @@ const SCRIPT_CREATE = String.raw`(async () => {
   check('back length 71.2 cm shown for B = 100', body.includes('71.2'));
   check('door tier 2 selected (49.8 cm)', body.includes('49.8'));
 
-  const after = projectsRaw();
-  const mod = after && after[0] && after[0].modules[0];
+  const mod = findProject('پروژهٔ آزمایشی')?.modules?.[0];
   check('typed width saved to the project file', !!(mod && Number(mod.input.width) === 100), mod && mod.input.width);
 
   // The same numbers must reach the cutting list, in millimetres.
@@ -324,8 +327,9 @@ const SCRIPT_RESTORE = String.raw`(async () => {
   drop('backup.json', __BACKUP_TEXT__);
   await sleep(700);
   const restored = projectsRaw();
-  check('valid backup restores the project', Array.isArray(restored) && restored.length >= 1, restored ? restored.length : 'unreadable');
-  check('restored project keeps its name', !!(restored && restored[0].name.includes('پروژهٔ آزمایشی')));
+  const restoredProject = findProject('پروژهٔ آزمایشی');
+  check('valid backup restores the project', Array.isArray(restored) && restored.length >= 1, restored ? restored.length + ' project(s)' : 'unreadable');
+  check('restored project keeps its name and module', !!(restoredProject && restoredProject.modules.length === 1), restoredProject && restoredProject.name);
   check('restore reports success', /بازیابی انجام شد|restored/i.test(toastText()), toastText());
   return checks;
 })()`;
@@ -369,8 +373,7 @@ const SCRIPT_ROBUSTNESS = String.raw`(async () => {
   // Restore a sane value so the persisted project stays meaningful for phase 2.
   setField('عرض کابینت', 100);
   await sleep(600);
-  const projects = projectsRaw();
-  const mod = projects && projects[0] && projects[0].modules[0];
+  const mod = findProject('پروژهٔ آزمایشی')?.modules?.[0];
   check('project still saves after the storage failure', !!(mod && Number(mod.input.width) === 100), mod && mod.input.width);
   return checks;
 })()`;
@@ -384,9 +387,10 @@ const SCRIPT_REOPEN = String.raw`(async () => {
   check('direction is still RTL after restart', document.documentElement.dir === 'rtl', document.documentElement.dir);
 
   const projects = projectsRaw();
-  check('project survived closing and reopening the app', Array.isArray(projects) && projects.length >= 1, projects ? projects.length : 'unreadable');
-  check('saved project name survived', !!(projects && projects[0] && projects[0].name.includes('پروژهٔ آزمایشی')), projects && projects[0] && projects[0].name);
-  const mod = projects && projects[0] && projects[0].modules[0];
+  const reopened = findProject('پروژهٔ آزمایشی');
+  check('project survived closing and reopening the app', !!reopened, projects ? projects.length + ' project(s)' : 'unreadable');
+  check('saved project name survived', !!(reopened && reopened.name.includes('پروژهٔ آزمایشی')), reopened && reopened.name);
+  const mod = reopened?.modules?.[0];
   check('entered width survived (100 cm)', !!(mod && Number(mod.input.width) === 100), mod && mod.input.width);
 
   check('projects screen reachable', await navTo('پروژه‌ها'));
