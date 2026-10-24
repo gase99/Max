@@ -108,8 +108,33 @@ jobs:
       # exercises the app from the outside: launch, RTL/LTR, calculations,
       # persistence and the offline guarantee.
       - name: Runtime smoke test (Electron, Windows)
+        shell: pwsh
         working-directory: apps/desktop
-        run: npx electron smoke-test.cjs
+        run: |
+          Write-Host "electron: $((Get-Command electron -ErrorAction SilentlyContinue).Source)"
+          npx electron smoke-test.cjs 2>&1 | Tee-Object -FilePath smoke.log
+          $code = $LASTEXITCODE
+          if ($code -ne 0) {
+            # Surface the actual reason as a check annotation, because the raw
+            # log is not always retrievable by automation.
+            $lines = Get-Content smoke.log -ErrorAction SilentlyContinue
+            $bad = ($lines | Select-String -Pattern '✗|\[smoke\]|Error:|not found' | Select-Object -First 6 | ForEach-Object { $_.Line }) -join ' || '
+            if (-not $bad) { $bad = ($lines | Select-Object -Last 8) -join ' || ' }
+            Write-Host "::error title=Electron smoke test failed::$bad"
+            exit 1
+          }
+          Write-Host "::notice title=Electron smoke test::application launched and all runtime checks passed"
+
+      - name: Upload smoke report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-report-${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 7
+          path: |
+            apps/desktop/smoke-report.json
+            apps/desktop/smoke.log
 
       # Installs the produced NSIS installer silently and confirms the
       # installed application starts and keeps running.

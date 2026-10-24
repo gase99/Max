@@ -145,7 +145,6 @@ async function run() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      offscreen: true,
     },
   });
 
@@ -158,7 +157,17 @@ async function run() {
     app.exit(1);
   });
 
-  await win.loadFile(entry);
+  win.webContents.on('did-fail-load', (_e, code, desc, url) => {
+    console.error(`[smoke] did-fail-load ${code} ${desc} ${url}`);
+  });
+
+  try {
+    await win.loadFile(entry);
+  } catch (err) {
+    console.error('[smoke] loadFile failed:', err && err.message);
+    app.exit(1);
+    return;
+  }
 
   let checks;
   try {
@@ -198,7 +207,25 @@ async function run() {
     for (const e of consoleErrors.slice(0, 5)) console.log(`    - ${e}`);
   }
 
+  const report = {
+    electron: process.versions.electron,
+    chrome: process.versions.chrome,
+    platform: process.platform,
+    renderer: entry,
+    checks,
+    networkRequests,
+    consoleErrors,
+    passed: checks.length - failed,
+    total: checks.length,
+  };
+  try {
+    fs.writeFileSync(path.join(__dirname, 'smoke-report.json'), JSON.stringify(report, null, 2));
+  } catch (err) {
+    console.error('[smoke] could not write report:', err && err.message);
+  }
+
   console.log(`\n${checks.length - failed}/${checks.length} checks passed`);
+  console.log(`SMOKE_RESULT ${failed === 0 ? 'PASS' : 'FAIL'} ${checks.length - failed}/${checks.length}`);
   app.exit(failed === 0 ? 0 : 1);
 }
 
