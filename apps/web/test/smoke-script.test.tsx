@@ -51,16 +51,28 @@ function preludeSource(): string {
   return materialise('PRELUDE', '');
 }
 
+/**
+ * Reproduce `wrapScript()` from `smoke-test.cjs`: the prelude and the script body
+ * share one async function scope, and a throw becomes a failed check with its
+ * real message (Electron only reports "Script failed to execute").
+ */
+function wrapScript(body: string): string {
+  return `(async () => {
+${preludeSource()}
+try {
+  return await (${body});
+} catch (e) {
+  return [{ name: 'in-page error', ok: false, detail: String((e && e.stack) || e) }];
+}
+})()`;
+}
+
 async function runScripts(names: string[]): Promise<Check[]> {
   const out: Check[] = [];
   for (const name of names) {
-    // The script body is an async IIFE; the prelude is a statement list, so the
-    // two are joined the same way Electron evaluates them (statements, with the
-    // IIFE's promise as the completion value).
-    const iife = materialise(name, '').trim();
-    const source = `${preludeSource()}\nreturn (${iife});`;
+    const source = wrapScript(materialise(name, '').trim());
     // eslint-disable-next-line no-new-func
-    const run = new Function(source) as () => Promise<Check[]>;
+    const run = new Function(`return ${source}`) as () => Promise<Check[]>;
     const checks = await run();
     expect(Array.isArray(checks), `${name} must resolve to a list of checks`).toBe(true);
     out.push(...checks);
@@ -116,7 +128,7 @@ describe('electron smoke scripts (executed against the real app)', () => {
 
   it('every script is wired to the real UI text, not to placeholders', () => {
     const names = ['SCRIPT_BASICS', 'SCRIPT_CREATE', 'SCRIPT_CLICK_CSV', 'SCRIPT_DRAWINGS', 'SCRIPT_CLICK_DXF', 'SCRIPT_CLICK_PDF', 'SCRIPT_CLICK_BACKUP', 'SCRIPT_RESTORE', 'SCRIPT_ROBUSTNESS', 'SCRIPT_REOPEN'];
-    const all = names.map((n) => materialise(n, preludeSource())).join('\n');
+    const all = names.map((n) => wrapScript(materialise(n, '').trim())).join('\n');
     for (const literal of ['بارگذاری نمونهٔ پروژه', 'لیست برش', 'نقشهٔ انفجاری', 'پشتیبان‌گیری', 'DXF', '768', 'پروژهٔ آزمایشی']) {
       expect(all, `the smoke scripts must reference «${literal}»`).toContain(literal);
     }

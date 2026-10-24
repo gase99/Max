@@ -54,10 +54,10 @@ npm run test:all    # هر دو
  ✓ test/app.test.tsx        (20 tests)
  ✓ test/exports.test.tsx    (8 tests)
  ✓ test/exploded.test.tsx   (25 tests)
- ✓ test/smoke-script.test.tsx (4 tests)
+ ✓ test/smoke-script.test.tsx (5 tests)
 
  Test Files  4 passed (4)
-      Tests  57 passed (57)
+      Tests  58 passed (58)
 ```
 
 ### فهرست تست‌های رابط کاربری
@@ -116,4 +116,4 @@ npm ci --legacy-peer-deps
 npm run test:all
 ```
 
-انتظار: **۲۱۵ تست موفق، ۰ ناموفق** (۱۵۸ موتور + ۵۷ رابط کاربری).
+انتظار: **۲۱۶ تست موفق، ۰ ناموفق** (۱۵۸ موتور + ۵۸ رابط کاربری).

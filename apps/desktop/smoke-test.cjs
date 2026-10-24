@@ -139,8 +139,7 @@ const PRELUDE = String.raw`
 /* ------------------------------------------------------------------ */
 /*  Phase 1 — basics                                                   */
 /* ------------------------------------------------------------------ */
-const SCRIPT_BASICS = String.raw`${PRELUDE}
-(async () => {
+const SCRIPT_BASICS = String.raw`(async () => {
   await waitFor(() => document.querySelector('#root') && document.querySelector('#root').children.length);
   check('application mounted', !!document.querySelector('.shell'));
   check('default direction is RTL', document.documentElement.dir === 'rtl', document.documentElement.dir);
@@ -213,8 +212,7 @@ const SCRIPT_BASICS = String.raw`${PRELUDE}
 /* ------------------------------------------------------------------ */
 /*  Phase 1 — create a project, enter dimensions, save                 */
 /* ------------------------------------------------------------------ */
-const SCRIPT_CREATE = String.raw`${PRELUDE}
-(async () => {
+const SCRIPT_CREATE = String.raw`(async () => {
   check('analyses screen reachable', await navTo('تحلیل جدید'));
 
   // Name the project, then add a ground cabinet: this creates the project and
@@ -259,8 +257,7 @@ const SCRIPT_CREATE = String.raw`${PRELUDE}
   return checks;
 })()`;
 
-const SCRIPT_CLICK_CSV = String.raw`${PRELUDE}
-(async () => {
+const SCRIPT_CLICK_CSV = String.raw`(async () => {
   const ok = await clickButton('CSV');
   return [{ name: 'cutting-list CSV export triggered', ok: !!ok, detail: ok ? null : 'button not found' }];
 })()`;
@@ -268,8 +265,7 @@ const SCRIPT_CLICK_CSV = String.raw`${PRELUDE}
 /* ------------------------------------------------------------------ */
 /*  Phase 1 — drawings, DXF, print bundle                              */
 /* ------------------------------------------------------------------ */
-const SCRIPT_DRAWINGS = String.raw`${PRELUDE}
-(async () => {
+const SCRIPT_DRAWINGS = String.raw`(async () => {
   check('exploded drawing screen reachable', await navTo('نقشهٔ انفجاری'));
   const images = [...document.querySelectorAll('img.sheet-svg')];
   check('at least one A4 sheet rendered', images.length > 0, images.length);
@@ -281,14 +277,12 @@ const SCRIPT_DRAWINGS = String.raw`${PRELUDE}
   return checks;
 })()`;
 
-const SCRIPT_CLICK_DXF = String.raw`${PRELUDE}
-(async () => {
+const SCRIPT_CLICK_DXF = String.raw`(async () => {
   const ok = await clickButton('DXF');
   return [{ name: 'DXF export triggered', ok: !!ok, detail: ok ? null : 'button not found' }];
 })()`;
 
-const SCRIPT_CLICK_PDF = String.raw`${PRELUDE}
-(async () => {
+const SCRIPT_CLICK_PDF = String.raw`(async () => {
   const ok = await clickButton('ذخیرهٔ PDF');
   return [{ name: 'A4 print bundle triggered', ok: !!ok, detail: ok ? null : 'button not found' }];
 })()`;
@@ -296,15 +290,13 @@ const SCRIPT_CLICK_PDF = String.raw`${PRELUDE}
 /* ------------------------------------------------------------------ */
 /*  Phase 1 — backup, invalid restore, valid restore                   */
 /* ------------------------------------------------------------------ */
-const SCRIPT_CLICK_BACKUP = String.raw`${PRELUDE}
-(async () => {
+const SCRIPT_CLICK_BACKUP = String.raw`(async () => {
   check('projects screen reachable', await navTo('پروژه‌ها'));
   const ok = await clickButton('پشتیبان‌گیری');
   return checks.concat([{ name: 'backup download triggered', ok: !!ok, detail: ok ? null : 'button not found' }]);
 })()`;
 
-const SCRIPT_RESTORE = String.raw`${PRELUDE}
-(async () => {
+const SCRIPT_RESTORE = String.raw`(async () => {
   const fileInput = document.querySelector('input[type=file]');
   check('restore control present', !!fileInput);
   if (!fileInput) return checks;
@@ -341,8 +333,7 @@ const SCRIPT_RESTORE = String.raw`${PRELUDE}
 /* ------------------------------------------------------------------ */
 /*  Phase 1 — invalid input and storage failure                        */
 /* ------------------------------------------------------------------ */
-const SCRIPT_ROBUSTNESS = String.raw`${PRELUDE}
-(async () => {
+const SCRIPT_ROBUSTNESS = String.raw`(async () => {
   check('back to the ground-cabinet editor', await navTo('کابینت زمینی'));
 
   // Zero width: the formulas still run (Excel arithmetic), but the UI must warn.
@@ -387,8 +378,7 @@ const SCRIPT_ROBUSTNESS = String.raw`${PRELUDE}
 /* ------------------------------------------------------------------ */
 /*  Phase 2 — reopen the same profile in a new process                 */
 /* ------------------------------------------------------------------ */
-const SCRIPT_REOPEN = String.raw`${PRELUDE}
-(async () => {
+const SCRIPT_REOPEN = String.raw`(async () => {
   await waitFor(() => document.querySelector('#root') && document.querySelector('#root').children.length);
   check('application mounted after restart', !!document.querySelector('.shell'));
   check('direction is still RTL after restart', document.documentElement.dir === 'rtl', document.documentElement.dir);
@@ -409,6 +399,32 @@ const SCRIPT_REOPEN = String.raw`${PRELUDE}
   check('sheet present after restart', document.querySelectorAll('img.sheet-svg').length > 0);
   return checks;
 })()`;
+
+/* ------------------------------------------------------------------ */
+/*  Script wrapper                                                     */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Wrap one script for `executeJavaScript`.
+ *
+ * Two things matter here:
+ *  - **One scope per evaluation.** The prelude declares `const` bindings; run
+ *    twice in the page's global lexical scope they would be a SyntaxError on
+ *    the second call, which Electron reports only as "Script failed to
+ *    execute". Wrapping in an async function gives every run its own scope.
+ *  - **Real error text.** Any throw is converted into a failed check carrying
+ *    the actual message and stack, instead of the generic Electron text.
+ */
+function wrapScript(body) {
+  return `(async () => {
+${PRELUDE}
+try {
+  return await (${body});
+} catch (e) {
+  return [{ name: 'in-page error', ok: false, detail: String((e && e.stack) || e) }];
+}
+})()`;
+}
 
 /* ------------------------------------------------------------------ */
 /*  Main                                                               */
@@ -558,7 +574,7 @@ async function run() {
   const allChecks = [];
   const runScript = async (script) => {
     try {
-      const result = await win.webContents.executeJavaScript(script, true);
+      const result = await win.webContents.executeJavaScript(wrapScript(script), true);
       if (Array.isArray(result)) allChecks.push(...result);
       return result;
     } catch (err) {
