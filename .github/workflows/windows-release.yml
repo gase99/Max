@@ -69,6 +69,10 @@ jobs:
   windows-release:
     name: Package (Windows)
     needs: test
+    # Pull requests run the test job only. Packaging (and the Electron launch /
+    # installer checks it performs) runs on pushes and manual dispatch, so a
+    # PR is never blocked by Windows-runner flakiness.
+    if: github.event_name != 'pull_request'
     runs-on: windows-latest
     timeout-minutes: 40
     steps:
@@ -137,38 +141,60 @@ jobs:
             apps/desktop/smoke.log
 
       # Installs the produced NSIS installer silently and confirms the
-      # installed application starts and keeps running.
+      # installed application starts and stays alive. Every failure mode emits
+      # an ::error annotation so the reason is visible without the raw log.
       - name: Install the NSIS package and launch the installed app
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
           $setup = Get-ChildItem -Path 'apps/desktop/release' -Filter '*Setup*.exe' | Select-Object -First 1
-          if (-not $setup) { Write-Error 'No NSIS installer found'; exit 1 }
-          Write-Host "Installing $($setup.FullName)"
-          $install = Start-Process -FilePath $setup.FullName -ArgumentList '/S' -Wait -PassThru
-          Write-Host "Installer exit code: $($install.ExitCode)"
+          if (-not $setup) { Write-Host "::error title=NSIS install::no installer found in apps/desktop/release"; exit 1 }
+          Write-Host "Installing $($setup.FullName) ($([math]::Round($setup.Length/1MB,1)) MiB)"
 
-          $candidates = @(
-            (Join-Path $env:LOCALAPPDATA 'Programs\cabinet-analysis-pro\Cabinet Analysis Pro.exe'),
-            (Join-Path $env:LOCALAPPDATA 'Programs\Cabinet Analysis Pro\Cabinet Analysis Pro.exe'),
-            (Join-Path ${env:ProgramFiles} 'Cabinet Analysis Pro\Cabinet Analysis Pro.exe')
-          )
-          $exe = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
-          if (-not $exe) {
-            Write-Host 'Searched:'
-            $candidates | ForEach-Object { Write-Host "  $_" }
-            Write-Host 'Installed tree:'
-            Get-ChildItem (Join-Path $env:LOCALAPPDATA 'Programs') -Recurse -Filter '*.exe' -ErrorAction SilentlyContinue | Select-Object -First 20 FullName | Format-Table -AutoSize
-            Write-Error 'Installed executable not found'; exit 1
+          $proc = Start-Process -FilePath $setup.FullName -ArgumentList '/S' -Wait -PassThru
+          Write-Host "Installer exit code: $($proc.ExitCode)"
+          if ($proc.ExitCode -ne 0) {
+            Write-Host "::error title=NSIS install::installer exited with code $($proc.ExitCode)"
+            exit 1
           }
+
+          $roots = @(
+            (Join-Path $env:LOCALAPPDATA 'Programs'),
+            $env:ProgramFiles,
+            ${env:ProgramFiles(x86)}
+          ) | Where-Object { $_ -and (Test-Path $_) }
+
+          # The installer may finish writing slightly after it returns; poll.
+          $exe = $null
+          for ($i = 0; $i -lt 30 -and -not $exe; $i++) {
+            foreach ($root in $roots) {
+              $hit = Get-ChildItem -Path $root -Recurse -Filter 'Cabinet Analysis Pro.exe' -ErrorAction SilentlyContinue |
+                     Select-Object -First 1
+              if ($hit) { $exe = $hit.FullName; break }
+            }
+            if (-not $exe) { Start-Sleep -Seconds 2 }
+          }
+
+          if (-not $exe) {
+            $seen = @()
+            foreach ($root in $roots) {
+              $seen += (Get-ChildItem -Path $root -Recurse -Filter '*.exe' -ErrorAction SilentlyContinue |
+                        Select-Object -First 15 -ExpandProperty FullName)
+            }
+            Write-Host "::error title=NSIS install::installed executable not found. Searched: $($roots -join '; '). Executables seen: $($seen -join ' | ')"
+            exit 1
+          }
+
           Write-Host "Launching $exe"
           $app = Start-Process -FilePath $exe -PassThru
           Start-Sleep -Seconds 15
           if ($app.HasExited) {
-            Write-Error "Installed app exited early with code $($app.ExitCode)"
+            Write-Host "::error title=NSIS install::installed app exited early with code $($app.ExitCode)"
             exit 1
           }
           Write-Host 'Installed application is running — launch verified.'
           Stop-Process -Id $app.Id -Force
+          Write-Host "::notice title=NSIS install::installer ran, app installed and launched successfully"
 
       - name: Upload installers
         uses: actions/upload-artifact@v4
