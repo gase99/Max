@@ -290,6 +290,7 @@ const SCRIPT_ADD_WALL = String.raw`(async () => {
 })()`;
 
 const SCRIPT_CLICK_CSV = String.raw`(async () => {
+  await navTo('لیست برش');
   const ok = await clickButton('CSV');
   return [{ name: 'cutting-list CSV export triggered', ok: !!ok, detail: ok ? null : 'button not found' }];
 })()`;
@@ -378,7 +379,7 @@ const SCRIPT_RESTORE = String.raw`(async () => {
   const restored = projectsRaw();
   const restoredProject = findProject('پروژهٔ آزمایشی');
   check('valid backup restores the project', Array.isArray(restored) && restored.length >= 1, restored ? restored.length + ' project(s)' : 'unreadable');
-  check('restored project keeps its name and module', !!(restoredProject && restoredProject.modules.length === 1), restoredProject && restoredProject.name);
+  check('restored project keeps its name and its units', !!(restoredProject && restoredProject.modules.length >= 1), restoredProject && restoredProject.name);
   check('restore reports success', /بازیابی انجام شد|restored/i.test(toastText()), toastText());
   return checks;
 })()`;

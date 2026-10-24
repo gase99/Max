@@ -236,7 +236,7 @@ jobs:
 
       - name: Upload functional test artefacts
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: functional-test-report-${{ github.sha }}
           if-no-files-found: warn
@@ -327,7 +327,7 @@ jobs:
           Write-Host "::notice title=NSIS install::installer ran, app installed and launched successfully"
 
       - name: Upload installers
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: cabinet-analysis-pro-windows-${{ github.sha }}
           if-no-files-found: error
