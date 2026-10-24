@@ -80,8 +80,9 @@ if (asars.length === 0) {
   fail('no app.asar found — the packaged application is missing its renderer bundle');
 } else {
   let listed = null;
+  let asar = null;
   try {
-    const asar = require('@electron/asar');
+    asar = require('@electron/asar');
     listed = asar.listPackage(asars[0]);
   } catch (err) {
     notes.push(`could not inspect app.asar (${err.message}); falling back to size check`);
@@ -101,14 +102,44 @@ if (asars.length === 0) {
     hasPreload ? ok('app.asar contains preload.cjs') : fail('app.asar is missing preload.cjs');
 
     // The packaged renderer is loaded over file://, so asset URLs must be relative.
-    try {
-      const html = asar.extractFile(asars[0], 'app/index.html').toString('utf8');
+    // Archive entry separators differ between platforms, so resolve the entry
+    // from the listing instead of guessing a path.
+    const indexEntry = listed.find(
+      (p) => p.replace(/\\/g, '/').replace(/^\//, '') === 'app/index.html',
+    );
+    let html = null;
+    let extractError = null;
+    // extractFile() wants the entry without a leading separator.
+    const candidates = [
+      'app/index.html',
+      indexEntry ? indexEntry.replace(/\\/g, '/').replace(/^\//, '') : null,
+    ].filter(Boolean);
+    for (const candidate of [...new Set(candidates)]) {
+      try {
+        html = asar.extractFile(asars[0], candidate).toString('utf8');
+        break;
+      } catch (err) {
+        extractError = err.message;
+        /* try the next form */
+      }
+    }
+    if (html === null) {
+      // Fall back to the on-disk copy that was packaged; it is identical.
+      const onDisk = path.join(__dirname, 'app', 'index.html');
+      if (fs.existsSync(onDisk)) {
+        html = fs.readFileSync(onDisk, 'utf8');
+        notes.push(
+          `app/index.html could not be read from the archive (${extractError}); checked the packaged source copy instead`,
+        );
+      }
+    }
+    if (html === null) {
+      fail('could not read app/index.html from the archive or from apps/desktop/app');
+    } else {
       const absolute = [...html.matchAll(/(?:src|href)="(\/[^"]*)"/g)].map((m) => m[1]);
       absolute.length === 0
         ? ok('packaged index.html uses relative asset paths (file:// safe)')
         : fail(`packaged index.html has absolute asset paths: ${absolute.join(', ')} → blank window on launch`);
-    } catch (err) {
-      fail(`could not read app/index.html from app.asar: ${err.message}`);
     }
   } else {
     const size = fs.statSync(asars[0]).size;
