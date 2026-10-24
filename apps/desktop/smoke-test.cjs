@@ -224,8 +224,22 @@ const SCRIPT_CREATE = String.raw`(async () => {
   await sleep(150);
   check('customer field present', setField('مشتری', 'کارگاه نمونه'));
   await sleep(150);
+
+  // Explicitly create the project first: the sample project is selected at this
+  // point, and "quick add" would otherwise add the cabinet to *that* project.
+  const exactButton = (text) =>
+    [...document.querySelectorAll('button')].find((b) => (b.textContent || '').trim() === text) || null;
+  const newBtn = exactButton('جدید');
+  check('new-project button present', !!newBtn);
+  if (newBtn) { newBtn.click(); await sleep(500); }
+
+  const emptyProject = findProject('پروژهٔ آزمایشی');
+  check('project created with the typed name', !!(emptyProject && emptyProject.name.includes('پروژهٔ آزمایشی')), emptyProject && emptyProject.name);
+  check('new project starts with no modules', !!(emptyProject && emptyProject.modules.length === 0), emptyProject && emptyProject.modules.length);
+  check('customer saved on the project', !!(emptyProject && emptyProject.customer === 'کارگاه نمونه'), emptyProject && emptyProject.customer);
+
   const added = await clickButton('＋ کابینت زمینی');
-  check('ground cabinet added', added);
+  check('ground cabinet added to the new project', added);
   await sleep(600);
 
   const projects = projectsRaw();
