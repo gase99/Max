@@ -116,6 +116,7 @@ React, the DOM, or any cloud service.
 | [`docs/11-dxf-review.md`](docs/11-dxf-review.md) | بازبینی DXF: نسخه، واحد، لایه‌ها، قطعات بی‌اعتبار |
 | [`docs/12-workshop-guide.md`](docs/12-workshop-guide.md) | **راهنمای کارگاهی**: نصب، ابعاد، منطق محاسبه، نقشه/DXF، تست‌شده و تأییدنشده، پشتیبان |
 | [`docs/13-phase4-report.md`](docs/13-phase4-report.md) | گزارش نهایی مرحلهٔ ۴: تغییرات، نتایج، SHA-256، محدودیت‌ها |
+| [`docs/14-quick-reference.md`](docs/14-quick-reference.md) | **راهنمای سریع یک‌صفحه‌ای** کارگاه: نصب، چک‌لیست، چاپ، DXF، پشتیبان |
 
 ---
 

@@ -117,6 +117,7 @@ validation-units-pricing ۲۱ · excel-crossvalidation ۱۹ · nesting ۱۵ · c
 
 ## ۷. اسناد مرتبط
 
-`docs/12-workshop-guide.md` (راهنمای کارگاهی) · `docs/07-windows-release.md` (نصب و SHA) ·
+`docs/12-workshop-guide.md` (راهنمای کارگاهی، ویرایش ۲ — Stage 6) ·
+`docs/14-quick-reference.md` (راهنمای سریع یک‌صفحه‌ای) · `docs/07-windows-release.md` (نصب و SHA) ·
 `docs/10-excel-crossvalidation.md` · `docs/11-dxf-review.md` · `docs/08-exploded-drawings.md` ·
 `docs/06-test-report.md` · `docs/05-status-and-roadmap.md`
