@@ -1,0 +1,24 @@
+node_modules/
+dist/
+release/
+apps/desktop/app/
+.venv/
+__pycache__/
+*.log
+*.tsbuildinfo
+.DS_Store
+.vite/
+
+# Local-only SVG→PNG preview harness (needs @resvg/resvg-js; not a product dependency)
+tools/.render/
+
+# Functional smoke test artefacts (profile, downloads, screenshot, reports)
+apps/desktop/.smoke-profile/
+apps/desktop/.smoke-downloads/
+apps/desktop/smoke-report*.json
+apps/desktop/smoke.log
+apps/desktop/smoke-phase2.log
+apps/desktop/smoke-screen.png
+apps/desktop/SHA256SUMS.txt
+apps/desktop/release-info.json
+apps/desktop/release-rebuild/

@@ -1,0 +1,298 @@
+{
+  "_comment": "Cell-level cross-validation data. Every 'expected' number below is a CACHED value read from the workbook XML (Excel's own last calculation), never arithmetic done by this project. Cell addresses are the real addresses in the named sheet.",
+  "reference": {
+    "file": "analiz pro.2.xlsx",
+    "drive_id": "10mFhz1GHVOdAqSHebNUMFe8zPpx-FOSM",
+    "md5": "b95c231d8c4ea02ac5511ceb3ca7c5e9",
+    "bytes": 62691,
+    "identical_copies": [
+      "1Hcofy84C0ahyHx9WzJMis9Y1b_rrviKM",
+      "1ETKWCZ0HxDwz5DCPSTjTLkPG_LIf-fVz",
+      "1M6jaEq0DUXwZurtwcww-aTje4FjVA1f5",
+      "10mFhz1GHVOdAqSHebNUMFe8zPpx-FOSM"
+    ],
+    "sheets": {
+      "groundCabinet": "A1:N91",
+      "groundAnalysis": "B1:W87",
+      "wallCabinet": "A1:P139",
+      "wallAnalysis": "B1:T160",
+      "drawer": "B3:L6"
+    },
+    "tolerance": 1e-9
+  },
+  "variants": [
+    {
+      "file": "analiz pro.2-4.xlsx",
+      "drive_id": "1c0cgAlScCiaSXkJQKSdMS1dKMTKXVomJ",
+      "md5": "3628f6049aee77b885337878f3863688",
+      "bytes": 58367,
+      "created": "2025-10-22T11:52:00Z",
+      "modified": "2026-08-31T08:17:00Z"
+    },
+    {
+      "file": "analiz pro.2-1.xlsx",
+      "drive_id": "19er4VQhyhL2IOOctfzRsshUeTTZrpJov",
+      "md5": "81acde4004f7a04530dc2e1b548f3fb7",
+      "bytes": 67252,
+      "created": "2025-07-12T00:26:00Z",
+      "modified": "2025-10-22T12:00:00Z"
+    }
+  ],
+  "ground": [
+    {
+      "slot": 1,
+      "row": 2,
+      "input": {
+        "width": 80,
+        "baseWidth": 58,
+        "bodyWidth": 58,
+        "bodyLength": 73.4,
+        "shelfWidth": 55,
+        "railWidth": 7,
+        "doorHeight": 73.4
+      },
+      "cells": {
+        "D2": { "formula": "=B2", "expected": 80, "field": "baseLength" },
+        "H2": { "formula": "=B2-3.2", "expected": 76.8, "field": "shelfLength" },
+        "J2": { "formula": "=B2-3.2", "expected": 76.8, "field": "railLength" },
+        "K2": { "formula": "=D2-1.6", "expected": 78.4, "field": "backWidth" },
+        "L2": { "formula": "=F2+1.6-0.8", "expected": 74.2, "field": "backLength" },
+        "M2": {
+          "formula": "=IF(AND(B2>=10,B2<=50),B2-0.2,IF(AND(B2>50,B2<=100),B2/2-0.2,IF(AND(B2>100,B2<=150),B2/3-0.2,\"\")))",
+          "expected": 39.8,
+          "field": "doorWidth"
+        },
+        "N2": { "formula": "=73.4 (input)", "expected": 73.4, "field": "doorHeight" }
+      }
+    },
+    {
+      "slot": 2,
+      "row": 3,
+      "input": {
+        "width": 100,
+        "baseWidth": 55,
+        "bodyWidth": 55,
+        "bodyLength": 70.4,
+        "shelfWidth": 53,
+        "railWidth": 7,
+        "doorHeight": 73.4
+      },
+      "cells": {
+        "D3": { "formula": "=B3", "expected": 100, "field": "baseLength" },
+        "H3": { "formula": "=B3-3.2", "expected": 96.8, "field": "shelfLength" },
+        "J3": { "formula": "=B3-3.2", "expected": 96.8, "field": "railLength" },
+        "K3": { "formula": "=D3-1.6", "expected": 98.4, "field": "backWidth" },
+        "L3": { "formula": "=F3+1.6-0.8", "expected": 71.2, "field": "backLength" },
+        "M3": { "formula": "tier 2 (50<B<=100)", "expected": 49.8, "field": "doorWidth" }
+      }
+    }
+  ],
+  "wall": [
+    {
+      "slot": 1,
+      "row": 3,
+      "input": {
+        "width": 60,
+        "bodyWidth": 35,
+        "bodyLength": 90,
+        "baseWidth": 35,
+        "railWidth": 7,
+        "doorHeight": 92
+      },
+      "cells": {
+        "F3": { "formula": "=B3-3.2", "expected": 56.8, "field": "baseLength" },
+        "G3": { "formula": "=C3-2", "expected": 33, "field": "topWidth" },
+        "H3": { "formula": "=B3-3.2", "expected": 56.8, "field": "topLength" },
+        "I3": { "formula": "=E3-3", "expected": 32, "field": "shelfWidth" },
+        "J3": { "formula": "=F3", "expected": 56.8, "field": "shelfLength" },
+        "L3": { "formula": "=B3-3.2", "expected": 56.8, "field": "railLength" },
+        "M3": { "formula": "=F3+1.6", "expected": 58.4, "field": "backWidth" },
+        "N3": { "formula": "=D3-0.8", "expected": 89.2, "field": "backLength" },
+        "O3": { "formula": "tier 2 (50<B<=100)", "expected": 29.8, "field": "doorWidth" }
+      }
+    },
+    {
+      "slot": 2,
+      "row": 10,
+      "input": {
+        "width": 84,
+        "bodyWidth": 35,
+        "bodyLength": 100,
+        "baseWidth": 35,
+        "railWidth": 7,
+        "doorHeight": 92
+      },
+      "cells": {
+        "F10": { "formula": "=B10-3.2", "expected": 80.8, "field": "baseLength" },
+        "G10": { "formula": "=C10-2", "expected": 33, "field": "topWidth" },
+        "I10": { "formula": "=E10-3", "expected": 32, "field": "shelfWidth" },
+        "M10": {
+          "formula": "=F10+1.6",
+          "expected": 82.39999999999999,
+          "field": "backWidth",
+          "note": "Excel stores 82.4 with binary float drift; the app must reproduce it within tolerance, not by rounding."
+        },
+        "N10": { "formula": "=D10-0.8", "expected": 99.2, "field": "backLength" },
+        "O10": { "formula": "tier 2 (50<B<=100)", "expected": 41.8, "field": "doorWidth" }
+      }
+    }
+  ],
+  "drawer": {
+    "input": { "count": 1, "depth": 50, "width": 90, "height": 50 },
+    "cells": {
+      "H4": { "formula": "=C4-5", "expected": 45, "field": "bodyLength" },
+      "J4": { "formula": "=D4-9.1", "expected": 80.9, "field": "frontLength" },
+      "L4": { "formula": "=J4", "expected": 80.9, "field": "backLength" },
+      "H5": { "formula": "=E4/3-4", "expected": 12.666666666666668, "field": "bodyWidth" },
+      "J5": { "formula": "=H5", "expected": 12.666666666666668, "field": "frontWidth" },
+      "L5": { "formula": "=J5-2", "expected": 10.666666666666668, "field": "backWidth" },
+      "H6": { "formula": "=B4*2", "expected": 2, "field": "bodyCount" },
+      "J6": { "formula": "=B4", "expected": 1, "field": "frontCount" },
+      "L6": { "formula": "=J6", "expected": 1, "field": "backCount" }
+    }
+  },
+  "analysis_rows": {
+    "_comment": "'آنالیز زمینی' copies each unit's panels 1:1 into its own block; rows D..M of block 1 are shown here to prove the app's row ordering against sheet order.",
+    "input": {
+      "width": 80,
+      "baseWidth": 58,
+      "bodyWidth": 58,
+      "bodyLength": 73.4,
+      "shelfWidth": 55,
+      "railWidth": 7,
+      "doorHeight": 73.4
+    },
+    "cells": {
+      "D3": { "formula": "='کابینت زمینی'!D5", "expected": 1, "field": "baseCount" },
+      "F3": { "formula": "='کابینت زمینی'!C2", "expected": 58, "field": "baseWidth" },
+      "H3": { "formula": "='کابینت زمینی'!D2", "expected": 80, "field": "baseLength" },
+      "F4": { "formula": "='کابینت زمینی'!E2", "expected": 58, "field": "bodyWidth" },
+      "H4": { "formula": "='کابینت زمینی'!F2", "expected": 73.4, "field": "bodyLength" },
+      "F5": { "formula": "='کابینت زمینی'!G2", "expected": 55, "field": "shelfWidth" },
+      "H5": { "formula": "='کابینت زمینی'!H2", "expected": 76.8, "field": "shelfLength" },
+      "L3": { "formula": "='کابینت زمینی'!K2", "expected": 78.4, "field": "backWidth" },
+      "M3": { "formula": "='کابینت زمینی'!L2", "expected": 74.2, "field": "backLength" }
+    }
+  },
+  "variant_rows": {
+    "_comment": "Rows sampled from the two other workbook versions in Drive. The filenames differ, so they were compared by content: same formulas, different entered workshop dimensions. Each row was recomputed by the engine and matched.",
+    "v4": {
+      "file_md5": "3628f6049aee77b885337878f3863688",
+      "rows": [
+        {
+          "row": 2,
+          "input": {
+            "width": 100,
+            "baseWidth": 55,
+            "bodyWidth": 55,
+            "bodyLength": 70.4,
+            "shelfWidth": 53,
+            "railWidth": 7,
+            "doorHeight": 73.4
+          },
+          "cells": {
+            "H2": { "expected": 96.8, "field": "shelfLength" },
+            "K2": { "expected": 98.4, "field": "backWidth" },
+            "L2": { "expected": 71.2, "field": "backLength" },
+            "M2": { "expected": 49.8, "field": "doorWidth" }
+          }
+        },
+        {
+          "row": 8,
+          "input": {
+            "width": 30,
+            "baseWidth": 58,
+            "bodyWidth": 58,
+            "bodyLength": 73.4,
+            "shelfWidth": 55,
+            "railWidth": 7,
+            "doorHeight": 73.4
+          },
+          "cells": {
+            "H8": { "expected": 26.8, "field": "shelfLength" },
+            "K8": { "expected": 28.4, "field": "backWidth" },
+            "L8": { "expected": 74.2, "field": "backLength" },
+            "M8": { "expected": 29.8, "field": "doorWidth" }
+          }
+        }
+      ]
+    },
+    "v1": {
+      "file_md5": "81acde4004f7a04530dc2e1b548f3fb7",
+      "rows": [
+        {
+          "row": 3,
+          "input": {
+            "width": 95,
+            "baseWidth": 55,
+            "bodyWidth": 55,
+            "bodyLength": 71,
+            "shelfWidth": 50,
+            "railWidth": 7,
+            "doorHeight": 72
+          },
+          "cells": {
+            "H3": { "expected": 91.8, "field": "shelfLength" },
+            "K3": { "expected": 93.4, "field": "backWidth" },
+            "L3": { "expected": 71.8, "field": "backLength" },
+            "M3": { "expected": 47.3, "field": "doorWidth" }
+          }
+        },
+        {
+          "row": 4,
+          "input": {
+            "width": 62,
+            "baseWidth": 55,
+            "bodyWidth": 55,
+            "bodyLength": 71,
+            "shelfWidth": 50,
+            "railWidth": 7,
+            "doorHeight": 72
+          },
+          "cells": {
+            "H4": { "expected": 58.8, "field": "shelfLength" },
+            "K4": { "expected": 60.4, "field": "backWidth" },
+            "L4": { "expected": 71.8, "field": "backLength" },
+            "M4": { "expected": 30.8, "field": "doorWidth" }
+          }
+        },
+        {
+          "row": 5,
+          "input": {
+            "width": 89.3,
+            "baseWidth": 55,
+            "bodyWidth": 55,
+            "bodyLength": 45,
+            "shelfWidth": 50,
+            "railWidth": 7,
+            "doorHeight": 72
+          },
+          "cells": {
+            "H5": { "expected": 86.1, "field": "shelfLength" },
+            "K5": { "expected": 87.7, "field": "backWidth" },
+            "L5": { "expected": 45.8, "field": "backLength" },
+            "M5": { "expected": 44.45, "field": "doorWidth" }
+          }
+        },
+        {
+          "row": 6,
+          "input": {
+            "width": 0,
+            "baseWidth": 58,
+            "bodyWidth": 58,
+            "bodyLength": 73.4,
+            "shelfWidth": 55,
+            "railWidth": 7,
+            "doorHeight": 73.4
+          },
+          "cells": {
+            "H6": { "expected": -3.2, "field": "shelfLength" },
+            "K6": { "expected": -1.6, "field": "backWidth" },
+            "L6": { "expected": 74.2, "field": "backLength" },
+            "M6": { "expected": "", "field": "doorWidth" }
+          }
+        }
+      ]
+    }
+  }
+}

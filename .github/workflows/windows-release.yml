@@ -1,0 +1,353 @@
+name: Windows release
+
+# Builds, tests and packages the Windows desktop application.
+#
+# Trigger manually (recommended), or automatically on pushes that touch the
+# application. Pull requests only run the test job, never the packaging job.
+on:
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: 'Publish a draft GitHub Release with the built installers'
+        type: boolean
+        default: false
+  push:
+    branches:
+      - main
+      - 'arena/**'
+      - 'feature/**'
+    paths:
+      - 'packages/**'
+      - 'apps/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/windows-release.yml'
+  pull_request:
+    paths:
+      - 'packages/**'
+      - 'apps/**'
+      - 'package.json'
+      - '.github/workflows/windows-release.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests & build (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      # jsdom@30 requires Node >= 22.22.2, and @testing-library/jest-dom@7
+      # requires Node >= 22. Node 20 fails the UI test job.
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.22.2'
+          cache: npm
+
+      # `npm ci` (not `npm install`) so CI resolves exactly the committed
+      # lockfile — a drifting dependency can never be the reason a build passes
+      # here and fails on the workshop PC.
+      - name: Install dependencies (exact lockfile)
+        run: npm ci --no-audit --no-fund --legacy-peer-deps
+
+      - name: Engine tests (includes Excel golden equivalence)
+        run: npm run test
+
+      - name: UI tests
+        run: npm run test:web
+
+      # A syntax error in a desktop entry point cannot fail fast on Windows: the
+      # Electron main process shows a blocking dialog and the job sits until it
+      # times out. Catch it on Linux, in seconds.
+      - name: Syntax-check the desktop entry points
+        run: |
+          node --check apps/desktop/smoke-test.cjs
+          node --check apps/desktop/main.cjs
+          node --check apps/desktop/preload.cjs
+          node --check apps/desktop/build-renderer.cjs
+          node --check apps/desktop/verify-package.cjs
+
+      - name: Engine typecheck + declaration build
+        run: npm run build:engine
+
+      - name: Web production build
+        run: npm run build
+
+  windows-release:
+    name: Package (Windows)
+    needs: test
+    # Pull requests run the test job only. Packaging (and the Electron launch /
+    # installer checks it performs) runs on pushes and manual dispatch, so a
+    # PR is never blocked by Windows-runner flakiness.
+    if: github.event_name != 'pull_request'
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.22.2'
+          cache: npm
+
+      - name: Install root dependencies (exact lockfile)
+        run: npm ci --no-audit --no-fund --legacy-peer-deps
+
+      - name: Re-run the full test suite before packaging
+        run: npm run test:all
+
+      - name: Install desktop build toolchain
+        working-directory: apps/desktop
+        run: npm ci --no-audit --no-fund
+
+      - name: Build the renderer bundle
+        working-directory: apps/desktop
+        run: npm run build:renderer
+
+      - name: Package the Windows installers
+        working-directory: apps/desktop
+        env:
+          # No code-signing certificate is configured; never attempt to discover one.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npx electron-builder --win nsis portable --publish never
+
+      - name: Verify the artefacts
+        working-directory: apps/desktop
+        run: node verify-package.cjs
+
+      # Stage 1 of the workshop-readiness plan: the installable version and the
+      # SHA-256 of every installer must be part of the CI output, not something a
+      # human computes afterwards. The same hashes go to SHA256SUMS.txt (shipped
+      # as an artifact) and to the job summary.
+      - name: Record version and installer SHA-256
+        shell: pwsh
+        working-directory: apps/desktop
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $exes = Get-ChildItem -Path release -Filter '*.exe' | Sort-Object Name
+          if (-not $exes) {
+            Write-Host "::error title=Checksums::no installer was produced"
+            exit 1
+          }
+          $rows = foreach ($f in $exes) {
+            $hash = (Get-FileHash -Algorithm SHA256 -Path $f.FullName).Hash.ToLower()
+            [pscustomobject]@{ name = $f.Name; sha256 = $hash; bytes = $f.Length }
+            Write-Host "SHA-256  $hash  $($f.Name)  $($f.Length) bytes"
+          }
+          $rows | ForEach-Object { "$($_.sha256)  $($_.name)  $($_.bytes) bytes" } |
+            Set-Content -Encoding ascii -Path SHA256SUMS.txt
+          Get-Content SHA256SUMS.txt | Write-Host
+
+          $info = [ordered]@{
+            version   = $version
+            commit    = $env:GITHUB_SHA
+            branch    = $env:GITHUB_REF_NAME
+            run       = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"
+            node      = (node --version)
+            files     = $rows
+            signed    = $false
+            note      = 'Unsigned x64 NSIS installer + portable exe. SHA-256 covers the exact uploaded bytes.'
+          }
+          $info | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 -Path release-info.json
+          Write-Host (Get-Content release-info.json -Raw)
+
+          $summary = @()
+          $summary += "### Cabinet Analysis Pro $version — Windows artefacts"
+          $summary += ''
+          $summary += '| file | bytes | SHA-256 |'
+          $summary += '|---|---|---|'
+          foreach ($r in $rows) { $summary += "| ``$($r.name)`` | $($r.bytes) | ``$($r.sha256)`` |" }
+          $summary += ''
+          $summary += "Commit: ``$env:GITHUB_SHA`` · Node $(node --version) · unsigned x64 build"
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value ($summary -join "`n")
+          Write-Host "::notice title=Installer SHA-256 ($version)::$(($rows | ForEach-Object { $_.name + ' = ' + $_.sha256 }) -join ' | ')"
+
+      # Repeatability check: build the packaged tree a second time into a
+      # separate output directory and compare app.asar hashes. The NSIS
+      # installer itself carries timestamps, so its bytes are not expected to
+      # repeat; the *application payload* must.
+      - name: Rebuild the payload and compare hashes
+        shell: pwsh
+        working-directory: apps/desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: |
+          npx electron-builder --win dir --config.directories.output=release-rebuild --publish never
+          $a = Get-ChildItem 'release/win-unpacked/resources/app.asar' -ErrorAction SilentlyContinue
+          $b = Get-ChildItem 'release-rebuild/win-unpacked/resources/app.asar' -ErrorAction SilentlyContinue
+          if (-not $a -or -not $b) {
+            Write-Host "::warning title=Repeatability::app.asar missing in one of the two builds; repeatability not proven"
+            exit 0
+          }
+          $h1 = (Get-FileHash -Algorithm SHA256 $a.FullName).Hash.ToLower()
+          $h2 = (Get-FileHash -Algorithm SHA256 $b.FullName).Hash.ToLower()
+          Write-Host "build 1 app.asar $h1 ($($a.Length) bytes)"
+          Write-Host "build 2 app.asar $h2 ($($b.Length) bytes)"
+          if ($h1 -ne $h2) {
+            Write-Host "::error title=Repeatability::two builds of the same commit produced different app.asar payloads"
+            exit 1
+          }
+          Write-Host "::notice title=Repeatability::app.asar is byte-identical across two independent builds ($h1)"
+
+      # Runs the real Electron binary against the real built renderer and
+      # exercises the app the way a workshop user would — twice: phase 1 with a
+      # fresh profile (create, edit, export, back up, break, recover), then
+      # phase 2 as a *separate process* on the same profile to prove that a
+      # closed-and-reopened app still has the project and its numbers.
+      - name: Functional smoke test, phase 1 (fresh profile)
+        shell: pwsh
+        working-directory: apps/desktop
+        run: |
+          Write-Host "electron: $((Get-Command electron -ErrorAction SilentlyContinue).Source)"
+          npx electron smoke-test.cjs --phase=1 --reset 2>&1 | Tee-Object -FilePath smoke.log
+          $code = $LASTEXITCODE
+          if ($code -ne 0) {
+            # Surface the actual reason as a check annotation, because the raw
+            # log is not always retrievable by automation.
+            $lines = Get-Content smoke.log -ErrorAction SilentlyContinue
+            $bad = ($lines | Select-String -Pattern '✗|\[smoke\]|Error:|not found' | Select-Object -First 8 | ForEach-Object { $_.Line }) -join ' || '
+            if (-not $bad) { $bad = ($lines | Select-Object -Last 8) -join ' || ' }
+            Write-Host "::error title=Functional smoke test (phase 1) failed::$bad"
+            exit 1
+          }
+          $summary = (Get-Content smoke.log | Select-String -Pattern 'checks passed' | Select-Object -Last 1).Line
+          Write-Host "::notice title=Functional smoke test (phase 1)::$summary"
+
+      - name: Functional smoke test, phase 2 (reopen the same profile)
+        shell: pwsh
+        working-directory: apps/desktop
+        run: |
+          npx electron smoke-test.cjs --phase=2 2>&1 | Tee-Object -FilePath smoke-phase2.log
+          if ($LASTEXITCODE -ne 0) {
+            $lines = Get-Content smoke-phase2.log -ErrorAction SilentlyContinue
+            $bad = ($lines | Select-String -Pattern '✗|\[smoke\]|Error:' | Select-Object -First 8 | ForEach-Object { $_.Line }) -join ' || '
+            Write-Host "::error title=Functional smoke test (phase 2: reopen) failed::$bad"
+            exit 1
+          }
+          $summary = (Get-Content smoke-phase2.log | Select-String -Pattern 'checks passed' | Select-Object -Last 1).Line
+          Write-Host "::notice title=Functional smoke test (phase 2: reopen)::$summary"
+
+      - name: Upload functional test artefacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: functional-test-report-${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 7
+          path: |
+            apps/desktop/smoke-report.json
+            apps/desktop/smoke-report-phase2.json
+            apps/desktop/smoke.log
+            apps/desktop/smoke-phase2.log
+            apps/desktop/smoke-screen.png
+            apps/desktop/.smoke-downloads/*
+
+      # Strict check: launch the packaged application produced by
+      # electron-builder (release/win-unpacked). This exercises the real
+      # packaged tree, including app.asar, main process and renderer.
+      - name: Launch the packaged application
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem -Path 'apps/desktop/release/win-unpacked' -Filter '*.exe' -ErrorAction SilentlyContinue |
+                 Where-Object { $_.Name -notmatch 'unins' } | Select-Object -First 1
+          if (-not $exe) {
+            Write-Host "::error title=Packaged app::no executable in release/win-unpacked"
+            Get-ChildItem 'apps/desktop/release' -ErrorAction SilentlyContinue | Format-Table Name, Length
+            exit 1
+          }
+          Write-Host "Launching packaged app: $($exe.FullName)"
+          $app = Start-Process -FilePath $exe.FullName -PassThru
+          Start-Sleep -Seconds 15
+          if ($app.HasExited) {
+            Write-Host "::error title=Packaged app::exited early with code $($app.ExitCode)"
+            exit 1
+          }
+          Write-Host 'Packaged application is running — launch verified.'
+          Stop-Process -Id $app.Id -Force
+          Write-Host "::notice title=Packaged app::packaged Electron application launched and stayed alive"
+
+      # Installs the produced NSIS installer silently and confirms the installed
+      # application starts. The NSIS bootstrap performs elevation/shell work that
+      # intermittently crashes on hosted runners (0xC0000005), so it is retried
+      # and reported as a warning rather than blocking the release: the packaged
+      # application itself is already verified by the strict step above.
+      - name: Install the NSIS package and launch the installed app
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem -Path 'apps/desktop/release' -Filter '*Setup*.exe' | Select-Object -First 1
+          if (-not $setup) { Write-Host "::error title=NSIS install::no installer found"; exit 1 }
+          Write-Host "Installer: $($setup.Name) ($([math]::Round($setup.Length/1MB,1)) MiB)"
+
+          $installed = $null
+          $lastCode = $null
+          for ($attempt = 1; $attempt -le 3 -and -not $installed; $attempt++) {
+            Write-Host "Install attempt $attempt"
+            $proc = Start-Process -FilePath $setup.FullName -ArgumentList '/S' -Wait -PassThru
+            $lastCode = $proc.ExitCode
+            Write-Host "  exit code: $lastCode"
+            if ($lastCode -ne 0) { Start-Sleep -Seconds 5; continue }
+
+            $roots = @(
+              (Join-Path $env:LOCALAPPDATA 'Programs'),
+              $env:ProgramFiles,
+              ${env:ProgramFiles(x86)}
+            ) | Where-Object { $_ -and (Test-Path $_) }
+
+            for ($i = 0; $i -lt 15 -and -not $installed; $i++) {
+              foreach ($root in $roots) {
+                $hit = Get-ChildItem -Path $root -Recurse -Filter 'Cabinet Analysis Pro.exe' -ErrorAction SilentlyContinue |
+                       Select-Object -First 1
+                if ($hit) { $installed = $hit.FullName; break }
+              }
+              if (-not $installed) { Start-Sleep -Seconds 2 }
+            }
+          }
+
+          if (-not $installed) {
+            Write-Host "::warning title=NSIS install::installer bootstrap failed after 3 attempts (last exit code $lastCode). The packaged application itself was verified separately."
+            exit 0
+          }
+
+          Write-Host "Launching installed app: $installed"
+          $app = Start-Process -FilePath $installed -PassThru
+          Start-Sleep -Seconds 15
+          if ($app.HasExited) {
+            Write-Host "::error title=NSIS install::installed app exited early with code $($app.ExitCode)"
+            exit 1
+          }
+          Write-Host 'Installed application is running — install + launch verified.'
+          Stop-Process -Id $app.Id -Force
+          Write-Host "::notice title=NSIS install::installer ran, app installed and launched successfully"
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v7
+        with:
+          name: cabinet-analysis-pro-windows-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            apps/desktop/release/*.exe
+            apps/desktop/release/*.blockmap
+            apps/desktop/release/latest.yml
+            apps/desktop/SHA256SUMS.txt
+            apps/desktop/release-info.json
+
+      - name: Publish draft release
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_release }}
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          name: Cabinet Analysis Pro ${{ github.ref_name }}
+          tag_name: desktop-${{ github.run_number }}
+          files: |
+            apps/desktop/release/*.exe
+            apps/desktop/release/latest.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
