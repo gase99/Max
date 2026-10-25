@@ -30,6 +30,14 @@ results — not re-invented.
 See [`docs/05-status-and-roadmap.md`](docs/05-status-and-roadmap.md) for an
 explicit, honest list of what is done, limited, and not done.
 
+> **تصمیم‌های فنی تأییدشده (2026-10-25) / Confirmed technical decisions:**
+> فیبر ۳ میلی‌متری پنل پشت کابینت است؛ جهت رگه به نوع قطعه بستگی دارد (نگاشت
+> دقیق هنوز مشخص نشده و فرمول‌های محاسبه بدون تغییر مانده‌اند)؛ و
+> `analiz pro.2.xlsx` (`md5 b95c231d…`) فایل اکسل مرجع رسمی کارگاه است.
+> جزئیات: [`docs/12-workshop-guide.md`](docs/12-workshop-guide.md) بخش ۱۱.۱ ·
+> [`docs/14-quick-reference.md`](docs/14-quick-reference.md) ·
+> [`docs/05-status-and-roadmap.md`](docs/05-status-and-roadmap.md).
+
 ---
 
 ## Quick start
