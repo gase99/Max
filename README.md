@@ -27,6 +27,19 @@ results — not re-invented.
 | DXF export | ✅ 2D outlines at 1:1 in mm, re-parse verified (no CNC claim) |
 | CNC toolpaths / G-code | ⛔ not implemented — the workbook has no machining data |
 
+### Approved technical decisions (2026-10-25)
+
+Three items that were pending are now decided by the project owner:
+3 mm fibre board = **back panel** (3 mm thick) · **grain direction depends on the part
+type** (the part-by-part mapping is not yet defined) · **`analiz pro.2.xlsx` is the
+official reference workbook** (`md5 b95c231d…`).
+
+This is a **documentation-only** record: no formula, coefficient, computed value, export
+or test changed, and the existing ground-vs-wall formula difference is untouched.
+See [`docs/05-status-and-roadmap.md`](docs/05-status-and-roadmap.md) §7,
+[`docs/12-workshop-guide.md`](docs/12-workshop-guide.md) §11.1 and the addendum in
+[`docs/13-phase4-report.md`](docs/13-phase4-report.md) §8.
+
 See [`docs/05-status-and-roadmap.md`](docs/05-status-and-roadmap.md) for an
 explicit, honest list of what is done, limited, and not done.
 
